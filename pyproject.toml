@@ -1,0 +1,92 @@
+[project]
+name = "pymagor"
+version = "0.0.1"
+description = "Chainable image URL generator for Imagor and Thumbor with full filter support"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Graphics :: Graphics Conversion",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+dependencies = [
+    # No external runtime dependencies
+]
+
+[project.urls]
+Repository = "https://github.com/burgdev/pymagor"
+Documentation = "https://burgdev.github.io/pymagor/"
+Changelog = "https://github.com/burgdev/pymagor/blob/main/CHANGELOG.md"
+Releases = "https://github.com/burgdev/pymagor/releases"
+
+[dependency-groups]
+dev = [
+    "bump2version>=1.0.1",
+    "deptry>=0.21.1",
+    "environs>=11.2.1",
+    "git-cliff>=2.7.0",
+    "humanize>=4.11.0",
+    "invoke>=2.2.0",
+    "pre-commit>=4.0.1",
+    "pyright>=1.1.0",
+    "rich>=13.9.4",
+    "ruff>=0.8.2",
+    "toml>=0.10.2",
+    "types-requests>=2.28.0",
+]
+
+docs = [
+    "mkdocs>=1.4.0",
+    "termynal>=0.12.2",
+    "mkdocs-autoapi>=0.3.2",
+    "mkdocs-click>=0.8.1",
+    "mkdocs-gen-files>=0.5.0",
+    "mkdocs-literate-nav>=0.6.1",
+    "mkdocs-material>=9.5.49",
+    "mkdocs-open-in-new-tab>=1.0.8",
+    "mkdocs-section-index>=0.3.9",
+    "mkdocstrings[python]>=0.22.0",
+]
+
+test = [
+    "pytest>=8.3.4",
+    "pytest-cov>=4.1.0",
+    "pytest-docker>=1.0.0",
+    "requests>=2.28.0",
+]
+
+[project.scripts]
+pymagor = "pymagor.cli:main"
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+
+[tool.ruff.lint.isort]
+known-third-party = ["pymagor"]
+
+[tool.deptry]
+extend_exclude = ["tasks/__init__.py"]
+
+[tool.deptry.per_rule_ignores]
+DEP004 = [
+  "toml",
+  "rich",
+  "icecream",
+  "invoke",
+  "environs",
+  "humanize",
+  "python_on_whales",
+  "mkdocs_gen_files",
+] # only in dev
+DEP003 = ["pymagor"] # transitive dependencies
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="80mm"
+   height="80mm"
+   viewBox="0 0 80 80"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
+   sodipodi:docname="logo.svg"
+   inkscape:export-filename="logo.png"
+   inkscape:export-xdpi="40.639999"
+   inkscape:export-ydpi="40.639999"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#2a2a2a"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     inkscape:zoom="1.4614334"
+     inkscape:cx="145.74732"
+     inkscape:cy="110.85007"
+     inkscape:window-width="1882"
+     inkscape:window-height="1011"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="g2"
+     showgrid="false" />
+  <defs
+     id="defs1" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-9.6812675,-8.2321348)">
+    <g
+       id="g13"
+       transform="matrix(1.0648635,0,0,1.0648635,-30.219781,-15.390836)">
+      <g
+         id="g2"
+         transform="translate(-2.4846621)">
+        <circle
+           style="fill:#ffffff;fill-opacity:0.42991331;stroke:none;stroke-width:2.99769;stroke-linecap:round;stroke-linejoin:round"
+           id="path3"
+           cx="77.518738"
+           cy="59.747536"
+           r="36.723434" />
+        <rect
+           style="fill:#8fd6b7;stroke-width:19.8774;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stop-color:#000000;fill-opacity:1"
+           id="rect411"
+           width="59.850906"
+           height="44.203468"
+           x="45.308746"
+           y="29.916443" />
+        <rect
+           style="fill:#80ccaa;fill-opacity:1;stroke-width:19.8774;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stop-color:#000000"
+           id="rect442"
+           width="46.920399"
+           height="31.623617"
+           x="60.60022"
+           y="52.697239"
+           rx="5.9881501"
+           ry="5.9881501" />
+      </g>
+    </g>
+  </g>
+</svg>
