@@ -6,229 +6,249 @@ functionality on top of the base image processing operations.
 
 from __future__ import annotations
 
-from typing import Union
+from typing import Literal, Optional
+from urllib.parse import quote
 
-from ._core import BaseImagorThumbor, Operation
+from pymagor._core import BaseImagorThumbor, filter, operation
 
 
 class Imagor(BaseImagorThumbor):
     """Imagor image processor with Imagor-specific operations and filters."""
 
-    def stretch(self, width: int, height: int) -> "Imagor":
+    # ===== Operations =====
+    @operation
+    def fit_in(self, width: int, height: int, upscale: bool = False) -> None:
+        """Fit the image within the specified dimensions while preserving aspect ratio.
+
+        Args:
+            width: Maximum width in pixels.
+            height: Maximum height in pixels.
+        """
+        assert "stretch" not in (
+            a.name for a in self._get_operations()
+        ), "Use either 'fit-in' or 'stretch'"
+        self.add_operation("fit-in")
+        self.add_operation("resize", f"{width}x{height}")
+        if upscale:
+            self.add_filter("upscale")
+
+    @operation
+    def stretch(self, width: int, height: int) -> None:
         """Stretch the image to the exact dimensions without preserving aspect ratio.
 
         Args:
             width: Target width in pixels.
             height: Target height in pixels.
-
-        Returns:
-            A new instance with the stretch operation applied.
         """
-        new = self._clone()
-        new._operations.append(Operation("stretch", (width, height)))
-        return new
+        assert "fit-in" not in (
+            a.name for a in self._get_operations()
+        ), "Use either 'fit-in' or 'stretch'"
+        self.add_operation("stretch")
+        self.add_operation("resize", f"{width}x{height}")
 
+    # ===== Filters =====
+    @filter
     def focal(
         self,
-        left: int,
-        top: int,
-        right: int,
-        bottom: int,
-        original_width: int | None = None,
-        original_height: int | None = None,
-    ) -> "Imagor":
-        """Set the focal point of the image.
+        left: int | float | None = None,
+        top: int | float | None = None,
+        right: int | float | None = None,
+        bottom: int | float | None = None,
+        x: int | float | None = None,
+        y: int | float | None = None,
+    ) -> None:
+        """Set the focal point of the image, which is used in later transforms (e.g. `crop`).
+
+        The coordinates are either in pixel of float values between 0 and 1 (percentage of image dimensions)
+
+        Coordinated by a region of left-top point AxB and right-bottom point CxD, or a point X,Y.
 
         Args:
-            left: Left coordinate of the focal point.
-            top: Top coordinate of the focal point.
-            right: Right coordinate of the focal point.
-            bottom: Bottom coordinate of the focal point.
-            original_width: Original width of the image (optional).
-            original_height: Original height of the image (optional).
-
-        Returns:
-            A new instance with the focal point set.
+            left: Left coordinate of the focal region.
+            top: Top coordinate of the focal region.
+            right: Right coordinate of the focal region.
+            bottom: Bottom coordinate of the focal region.
+            x: X coordinate of the focal point.
+            y: Y coordinate of the focal point.
         """
-        new = self._clone()
-        args = [str(left), str(top), str(right), str(bottom)]
-        if original_width is not None and original_height is not None:
-            args.extend([str(original_width), str(original_height)])
-        new._operations.append(Operation("focal", tuple(args)))
-        return new
+        if left is not None:
+            assert top is not None, "top must be specified if left is specified"
+            assert right is not None, "right must be specified if left is specified"
+            assert bottom is not None, "bottom must be specified if left is specified"
+            assert x is None, "x must not be specified if left is specified"
+            assert y is None, "y must not be specified if left is specified"
+            left = f"{left:.4f}" if isinstance(left, float) else str(left)
+            top = f"{top:.4f}" if isinstance(top, float) else str(top)
+            right = f"{right:.4f}" if isinstance(right, float) else str(right)
+            bottom = f"{bottom:.4f}" if isinstance(bottom, float) else str(bottom)
+            self.add_filter("focal", f"{left}x{top}:{right}x{bottom}")
+        if x is not None:
+            x = f"{x:.4f}" if isinstance(x, float) else str(x)
+            y = f"{y:.4f}" if isinstance(y, float) else str(y)
+            assert y is not None, "y must be specified if x is specified"
+            assert (
+                top is None and left is None and right is None and bottom is None
+            ), "top, left, right, bottom must not be specified if x is specified"
+            self.add_filter("focal", f"{x}x{y}")
 
-    def upscale(self) -> "Imagor":
-        """Enable upscaling of the image beyond its original dimensions.
-
-        Returns:
-            A new instance with upscaling enabled.
-        """
-        new = self._clone()
-        new._operations.append(Operation("upscale"))
-        return new
-
-    def page(self, num: int) -> "Imagor":
+    @filter
+    def page(self, num: int) -> None:
         """Select a specific page from a multi-page document.
 
         Args:
             num: Page number (1-based index).
-
-        Returns:
-            A new instance with the specified page selected.
         """
-        new = self._clone()
-        new._operations.append(Operation("page", (num,)))
-        return new
+        self.add_filter("page", num)
 
-    def dpi(self, dpi: int) -> "Imagor":
-        """Set the DPI for vector images.
+    @filter
+    def dpi(self, dpi: int) -> None:
+        """Set the DPI for vector images like PDF or SVG.
 
         Args:
             dpi: Dots per inch.
-
-        Returns:
-            A new instance with the DPI set.
         """
-        new = self._clone()
-        new._operations.append(Operation("dpi", (dpi,)))
-        return new
+        self.add_filter("dpi", dpi)
 
-    def proportion(self, percentage: float) -> "Imagor":
-        """Scale the image by a percentage.
+    @operation
+    def orient(self, angle: int) -> None:
+        """Rotate the image before resizing and cropping.
+
+        This is different from the 'rotate' filter which rotates the image after processing.
 
         Args:
-            percentage: Scale percentage (e.g., 50 for 50%).
-
-        Returns:
-            A new instance with the scale applied.
+            angle: `0`, `90`, `180`, `270`. Rotation angle.
         """
-        new = self._clone()
-        new._operations.append(Operation("proportion", (percentage,)))
-        return new
+        if angle % 90 != 0:
+            raise ValueError("Rotation angle must be a multiple of 90 degrees")
+        self.add_operation("orient", str(angle))
 
-    def format(self, fmt: str) -> "Imagor":
-        """Convert the image to the specified format.
+    @filter
+    def fill(self, color: str | Literal["blur", "auto", "none"] | None = None) -> None:
+        """Fill the missing area or transparent image with the specified color.
 
         Args:
-            fmt: Output format (e.g., 'jpg', 'png', 'webp').
-
-        Returns:
-            A new instance with the output format set.
+            color: Color in hex format or 'blur', 'auto', or 'none' (transparent). Default is transparent.
         """
-        new = self._clone()
-        new._operations.append(Operation("format", (fmt,)))
-        return new
+        if color is None:
+            color = "none"
+        self.add_filter("fill", color)
 
+    @filter
+    def hue(self, angle: int) -> None:
+        """Adjust the hue of the image.
+
+        Args:
+            angle: `0` to `359`. Hue rotation angle in degrees.
+        """
+        assert 0 <= angle <= 359, "Angle must be between 0 and 359"
+        self.add_filter("hue", angle)
+
+    @filter
+    def round_corner(
+        self, rx: int, ry: Optional[int] = None, color: str = "000000"
+    ) -> None:
+        """Add rounded corners to the image.
+
+        Args:
+            rx: Horizontal radius of the corners.
+            ry: Vertical radius of the corners (defaults to rx if not specified).
+            color: Corner color in hex format (default: '000000').
+        """
+        if ry is None:
+            ry = rx
+        self.add_filter("round_corner", f"{rx},{ry},{color}")
+
+    @filter
     def watermark(
         self,
         image: str,
-        x: Union[int, str],
-        y: Union[int, str],
-        alpha: float,
-        w_ratio: float | None = None,
-        h_ratio: float | None = None,
-    ) -> "Imagor":
+        x: int | str = "center",
+        y: int | str = "middle",
+        alpha: int = 0,
+        w_ratio: Optional[float] = None,
+        h_ratio: Optional[float] = None,
+    ) -> None:
         """Add a watermark to the image.
 
         Args:
-            image: Path or URL of the watermark image.
-            x: X position of the watermark (can be number or 'left', 'center', 'right').
-            y: Y position of the watermark (can be number or 'top', 'middle', 'bottom').
-            alpha: Opacity of the watermark (0.0 to 1.0).
-            w_ratio: Width ratio of the watermark relative to the base image.
-            h_ratio: Height ratio of the watermark relative to the base image.
-
-        Returns:
-            A new instance with the watermark applied.
+            image: Watermark image URI.
+            x: Horizontal position (e.g., `left`, `center`, `right`, `repeat`, or pixel value from left. Number with `p` suffix for percentage (e.g. `20p`)).
+            y: Vertical position (e.g., `top`, `middle`, `bottom`, `repeat`, or pixel value from top. Number with `p` suffix for percentage).
+            alpha: `0` to `100`. Watermark transparency.
+            w_ratio: `0` to `100`. Width ratio of the watermark relative to the image.
+            h_ratio: `0` to `100`. Height ratio of the watermark relative to the image.
         """
-        new = self._clone()
-        args = [image, str(x), str(y), str(alpha)]
-        if w_ratio is not None and h_ratio is not None:
-            args.extend([str(w_ratio), str(h_ratio)])
-        new._filters.append(("watermark", *args))
-        return new
+        image = quote(image, safe="")
+        self.add_filter("watermark", image, x, y, alpha, w_ratio, h_ratio)
 
+    @filter
     def label(
         self,
         text: str,
-        x: Union[int, str],
-        y: Union[int, str],
+        x: int | str,
+        y: int | str,
         size: int,
         color: str,
-        alpha: float | None = None,
-        font: str | None = None,
-    ) -> "Imagor":
+        alpha: Optional[float] = None,
+        font: Optional[str] = None,
+    ) -> None:
         """Add a text label to the image.
 
         Args:
-            text: Text to display.
-            x: X position (can be number or 'left', 'center', 'right').
-            y: Y position (can be number or 'top', 'middle', 'bottom').
+            text: Text to display (URL-encoded if needed).
+            x: X position (can be number, percentage like `20p`, or `left`, `center`, `right`).
+            y: Y position (can be number, percentage like `20p`, or `top`, `middle`, `bottom`).
             size: Font size in points.
-            color: Text color in CSS format.
-            alpha: Text opacity (0.0 to 1.0).
+            color: Text color in hex format (without #).
+            alpha: Text transparency (0.0 to 1.0).
             font: Font family to use.
-
-        Returns:
-            A new instance with the label applied.
         """
-        new = self._clone()
         args = [text, str(x), str(y), str(size), color]
         if alpha is not None:
             args.append(str(alpha))
         if font is not None:
             args.append(font)
-        new._filters.append(("label", *args))
-        return new
+        self.add_filter("label", ",".join(args))
 
-    def background_color(self, color: str) -> "Imagor":
-        """Set the background color for transparent images.
+    @filter
+    def strip_metadata(self) -> None:
+        """Remove all metadata from the image."""
+        self.add_filter("strip_metadata")
 
-        Args:
-            color: Background color in CSS format.
-
-        Returns:
-            A new instance with the background color set.
-        """
-        new = self._clone()
-        new._filters.append(("background_color", color))
-        return new
-
-    def fill(self, color: str) -> "Imagor":
-        """Fill the image with a solid color.
-
-        Args:
-            color: Fill color in CSS format.
-
-        Returns:
-            A new instance with the fill applied.
-        """
-        new = self._clone()
-        new._filters.append(("fill", color))
-        return new
-
-    def max_bytes(self, amount: int) -> "Imagor":
-        """Set the maximum file size in bytes for the output image.
-
-        Args:
-            amount: Maximum file size in bytes.
-
-        Returns:
-            A new instance with the maximum file size set.
-        """
-        new = self._clone()
-        new._filters.append(("max_bytes", str(amount)))
-        return new
-
-    def max_frames(self, n: int) -> "Imagor":
+    @operation
+    def max_frames(self, n: int) -> None:
         """Limit the number of frames in an animated image.
 
         Args:
             n: Maximum number of frames to keep.
-
-        Returns:
-            A new instance with the frame limit applied.
         """
-        new = self._clone()
-        new._filters.append(("max_frames", str(n)))
-        return new
+        self.add_operation("max_frames", str(n))
+
+    @filter
+    def upscale(self) -> None:
+        """upscale the image if fit-in is used"""
+        self.add_filter("upscale")
+
+
+if __name__ == "__main__":
+    import webbrowser
+
+    from pymagor import Signer
+
+    # Example image from Wikipedia
+    image_url = (
+        "https://raw.githubusercontent.com/cshum/imagor/master/testdata/gopher.png"
+    )
+    image_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg/1200px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg"
+    signer = Signer(key="my_key", type="sha256")
+
+    # Create an Imagor processor and apply some transformations
+    img = Imagor(base_url="http://localhost:8018", signer=signer).with_image(image_url)
+    img = img.quality(80).fit_in(400, 300)
+    img = img.radius(50, color="fff")
+    # img = img.blur(10)
+    img = img.rotate(90)
+
+    url = img.url()
+    print(url)
+    webbrowser.open(url)

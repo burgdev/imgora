@@ -15,8 +15,14 @@ Example:
     ...        .url())
 """
 
+from pymagor._core import (
+    BaseImage,  # noqa: F401
+    Filter,  # noqa: F401
+    Operation,  # noqa: F401
+    Signer,  # noqa: F401
+)
 from pymagor._imagor import Imagor  # noqa: F401
 from pymagor._thumbor import Thumbor  # noqa: F401
 
 __version__ = "0.0.1"
-__all__ = ["Imagor", "Thumbor"]
+__all__ = ["Imagor", "Thumbor", "Signer", "BaseImage", "Filter", "Operation"]

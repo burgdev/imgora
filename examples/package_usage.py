@@ -7,6 +7,7 @@ image_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Van_Gogh_
 img = (
     Imagor(base_url="http://localhost:8000")
     .with_image(image_url)
+    .crop(100, 100, 200, 200)
     .resize(800, 600)  # Resize to 800x600
     .blur(3)  # Apply blur with radius 3
     .grayscale()  # Convert to grayscale
@@ -14,4 +15,4 @@ img = (
 )
 
 # Get and print the processed URL
-print(img.url())
+print(img.path())
