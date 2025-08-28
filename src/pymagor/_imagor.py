@@ -6,7 +6,7 @@ functionality on top of the base image processing operations.
 
 from __future__ import annotations
 
-from typing import Optional, Union
+from typing import Union
 
 from ._core import BaseImagorThumbor, Operation
 
@@ -34,8 +34,8 @@ class Imagor(BaseImagorThumbor):
         top: int,
         right: int,
         bottom: int,
-        original_width: Optional[int] = None,
-        original_height: Optional[int] = None,
+        original_width: int | None = None,
+        original_height: int | None = None,
     ) -> "Imagor":
         """Set the focal point of the image.
 
@@ -125,8 +125,8 @@ class Imagor(BaseImagorThumbor):
         x: Union[int, str],
         y: Union[int, str],
         alpha: float,
-        w_ratio: Optional[float] = None,
-        h_ratio: Optional[float] = None,
+        w_ratio: float | None = None,
+        h_ratio: float | None = None,
     ) -> "Imagor":
         """Add a watermark to the image.
 
@@ -155,8 +155,8 @@ class Imagor(BaseImagorThumbor):
         y: Union[int, str],
         size: int,
         color: str,
-        alpha: Optional[float] = None,
-        font: Optional[str] = None,
+        alpha: float | None = None,
+        font: str | None = None,
     ) -> "Imagor":
         """Add a text label to the image.
 

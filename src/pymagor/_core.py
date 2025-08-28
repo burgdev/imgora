@@ -10,7 +10,7 @@ import hashlib
 import hmac
 from abc import ABC
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 
 @dataclass
@@ -38,7 +38,7 @@ class BaseImage(ABC):
 
     def __init__(
         self,
-        key: Optional[str] = None,
+        key: str | None = None,
         base_url: str = "",
         image: str = "",
         signer_type: str = "sha256",
@@ -237,7 +237,7 @@ class BaseImage(ABC):
 
     # Alias for round_corner
     def radius(
-        self, rx: int, ry: Optional[int] = None, color: str = "none"
+        self, rx: int, ry: int | None = None, color: str = "none"
     ) -> "BaseImage":
         """Add rounded corners to the image (alias for round_corner).
 
@@ -252,7 +252,7 @@ class BaseImage(ABC):
         return self.round_corner(rx, ry, color)
 
     def round_corner(
-        self, rx: int, ry: Optional[int] = None, color: str = "none"
+        self, rx: int, ry: int | None = None, color: str = "none"
     ) -> "BaseImage":
         """Add rounded corners to the image.
 

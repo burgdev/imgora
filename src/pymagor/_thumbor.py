@@ -6,7 +6,6 @@ functionality on top of the base image processing operations.
 
 from __future__ import annotations
 
-from typing import Optional, Tuple
 
 from ._core import BaseImagorThumbor, Operation
 
@@ -41,7 +40,7 @@ class Thumbor(BaseImagorThumbor):
     def curve(
         self,
         channel: str = "all",
-        points: Optional[Tuple[Tuple[float, float], ...]] = None,
+        points: tuple[tuple[float, float], ...] | None = None,
     ) -> "Thumbor":
         """Apply a curve adjustment to the image.
 
@@ -111,9 +110,9 @@ class Thumbor(BaseImagorThumbor):
 
     def rgb(
         self,
-        r: Optional[float] = None,
-        g: Optional[float] = None,
-        b: Optional[float] = None,
+        r: float | None = None,
+        g: float | None = None,
+        b: float | None = None,
     ) -> "Thumbor":
         """Adjust the RGB channels of the image.
 
