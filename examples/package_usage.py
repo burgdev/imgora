@@ -1,0 +1,17 @@
+from pymagor import Imagor
+
+# Example image from Wikipedia
+image_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg/1200px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg"
+
+# Create an Imagor processor and apply some transformations
+img = (
+    Imagor(base_url="http://localhost:8000")
+    .with_image(image_url)
+    .resize(800, 600)  # Resize to 800x600
+    .blur(3)  # Apply blur with radius 3
+    .grayscale()  # Convert to grayscale
+    .quality(85)  # Set quality to 85%
+)
+
+# Get and print the processed URL
+print(img.url())
