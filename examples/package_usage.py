@@ -1,11 +1,13 @@
-from pymagor import Imagor
+import webbrowser
+
+from pymagor import Imagor, Signer
 
 # Example image from Wikipedia
 image_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg/1200px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg"
 
 # Create an Imagor processor and apply some transformations
 img = (
-    Imagor(base_url="http://localhost:8000")
+    Imagor(base_url="http://localhost:8018", signer=Signer(key="my_key", type="sha256"))
     .with_image(image_url)
     .crop(100, 100, 200, 200)
     .resize(800, 600)  # Resize to 800x600
@@ -16,3 +18,5 @@ img = (
 
 # Get and print the processed URL
 print(img.path())
+print(img.url())
+webbrowser.open(img.url())

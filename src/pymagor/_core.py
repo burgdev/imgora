@@ -525,20 +525,6 @@ class BaseImage(ABC):
         """
         return self.round_corner(rx, ry, color)
 
-    @filter
-    def round_corner(
-        self, rx: int, ry: int | None = None, color: str | None = None
-    ) -> None:
-        """Add rounded corners to the image.
-
-        Args:
-            rx: X radius of the corners in pixels.
-            ry: Y radius of the corners in pixels (defaults to rx).
-            color: Corner color in CSS format (default: "none").
-        """
-        ry = ry or rx
-        self.add_filter("round_corner", rx, ry, color)
-
 
 class BaseImagorThumbor(BaseImage):
     """Base class with operations and filters common to both Imagor and Thumbor."""

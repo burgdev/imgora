@@ -156,6 +156,7 @@ class Imagor(BaseImagorThumbor):
         """
         if ry is None:
             ry = rx
+        color = color.lstrip("#").lower()
         self.add_filter("round_corner", f"{rx},{ry},{color}")
 
     @filter
