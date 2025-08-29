@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Literal, Self
 
 from pymagor._core import BaseImage
-from pymagor.decorator import operation
+from pymagor.decorator import chain
 
 
 class WsrvNl(BaseImage):
@@ -37,7 +37,7 @@ class WsrvNl(BaseImage):
         return f"?url={with_image}{filters_query}"
 
     # ===== Filters =====
-    @operation
+    @chain
     def resize(
         self, width: int, height: int, method: Literal["fit-in", "stretch"] = "fit-in"
     ) -> Self:
@@ -50,7 +50,7 @@ class WsrvNl(BaseImage):
         self.add_filter("w", width)
         self.add_filter("h", height)
 
-    @operation
+    @chain
     def crop(
         self,
         # width: int,
@@ -92,7 +92,7 @@ class WsrvNl(BaseImage):
         self.add_filter("ch", bottom - top)
         # self.add_filter("fit", "cover")
 
-    @operation
+    @chain
     def fit_in(
         self,
         width: int,
@@ -112,17 +112,17 @@ class WsrvNl(BaseImage):
         if not upscale:
             self.add_filter("we")
 
-    @operation
+    @chain
     def upscale(self) -> Self:
         """upscale the image if fit-in is used"""
         self.remove("we")
 
-    @operation
+    @chain
     def no_upscale(self) -> Self:
         """do not upscale the image if fit-in is used"""
         self.add_filter("we")
 
-    @operation
+    @chain
     def rotate(self, angle: int | None = None) -> Self:
         """Rotate the given image by the specified angle after processing.
 
@@ -135,7 +135,7 @@ class WsrvNl(BaseImage):
             self.add_filter("ro")
         self.add_filter("ro", angle)
 
-    @operation
+    @chain
     def background_color(self, color: str) -> Self:
         """The `background_color` filter sets the background layer to the specified color.
         This is specifically useful when converting transparent images (PNG) to JPEG.
@@ -146,7 +146,7 @@ class WsrvNl(BaseImage):
         self.add_filter("bg", color.removeprefix("#").lower())
 
     # ===== Filters =====
-    @operation
+    @chain
     def blur(self, radius: int | None = None, sigma: int | None = None) -> Self:
         """Apply gaussian blur to the image.
 
@@ -163,7 +163,7 @@ class WsrvNl(BaseImage):
             assert radius is None, "Radius must be None if sigma is set"
             self.add_filter("blur", f"{sigma:.2f}")
 
-    @operation
+    @chain
     def contrast(self, amount: int) -> Self:
         """Adjust contrast of the image.
 
@@ -174,7 +174,7 @@ class WsrvNl(BaseImage):
         assert -100 <= amount <= 100, "Amount must be between -100 and 100"
         self.add_filter("con", amount)
 
-    @operation
+    @chain
     def sharpen(
         self,
         sigma: float | None = None,
@@ -197,7 +197,7 @@ class WsrvNl(BaseImage):
             if jagged is not None:
                 self.add_filter("sharpj", jagged)
 
-    @operation
+    @chain
     def format(
         self,
         fmt: Literal["jpeg", "jpg", "png", "webp", "tiff"],
@@ -220,7 +220,7 @@ class WsrvNl(BaseImage):
             self.add_filter("filename", filename)
         self.add_filter("output", fmt)
 
-    @operation
+    @chain
     def round_corner(
         self,
         rx: int | None = None,
@@ -236,7 +236,7 @@ class WsrvNl(BaseImage):
         """
         pass
 
-    @operation
+    @chain
     def meta(
         self,
     ) -> Self:

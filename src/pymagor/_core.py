@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from typing import Any, Iterable, List, Literal, Self
 from urllib.parse import quote
 
-from pymagor.decorator import chained_method, filter, operation
+from pymagor.decorator import chain
 
 
 @dataclass
@@ -135,38 +135,36 @@ class BaseImage(ABC):
         self._operations: List[Operation] = []
         self._filters: List[Filter] = []
         self._signer = signer
+
+        # TODO: move
         self._op_order = None
 
     @property
     def signer(self) -> Signer | None:
+        """Returns the signer object"""
         return self._signer
 
-    @property
-    def op_order(self) -> tuple[str, ...]:
-        return self._op_order or THUMBOR_OP_ORDER
-
-    @op_order.setter
-    def op_order(self, value: tuple[str, ...]) -> None:
-        self._op_order = value
-
-    def add_operation(self, op: str | Operation, arg: str | None = None) -> None:
+    def add_operation(
+        self, op: str | Operation, arg: str | None = None, unique: bool = True
+    ) -> None:
         """Add an operation to the image processing pipeline.
 
         Args:
             op: The name of the operation or an Operation object.
             arg: Optional argument for the operation.
-        """
+            unique: Whether to remove existing operations with the same name before adding the new one."""
         if not isinstance(op, Operation):
             op = Operation(op, arg)
-        if op.name in (a.name for a in self._operations):
-            self._operations.remove(op)
+        if unique and op.name in (a.name for a in self._operations):
+            self._operations = [a for a in self._operations if a.name != op.name]
         self._operations.append(op)
 
-    def add_filter(self, filter: str | Filter, *args: Any) -> None:
+    def add_filter(self, filter: str | Filter, unique: bool = True, *args: Any) -> None:
         """Add a filter to the image processing pipeline.
 
         Args:
             filter: The name of the filter or a Filter object.
+            unique: Whether to remove existing filters with the same name before adding the new one.
             *args: Arguments for the filter.
         """
         if not isinstance(filter, Filter):
@@ -178,11 +176,15 @@ class BaseImage(ABC):
                 if args is not None
                 else (),
             )
-        if filter.name in (f.name for f in self._filters):
+        if unique and filter.name in (f.name for f in self._filters):
             self._filters = [f for f in self._filters if f.name != filter.name]
         self._filters.append(filter)
 
-    def remove(self, name: str) -> None:
+    def remove(
+        self,
+        name: str,
+        include: tuple[Literal["operations", "filters"]] = ("operations", "filters"),
+    ) -> None:
         """Remove an operation or filter from the image processing pipeline by name.
 
         For example:
@@ -195,53 +197,20 @@ class BaseImage(ABC):
         Args:
             name: The name of the operation or filter to remove.
         """
-        self._operations = [op for op in self._operations if op.name != name]
-        self._filters = [f for f in self._filters if f.name != name]
+        if "operations" in include:
+            self._operations = [op for op in self._operations if op.name != name]
+        if "filters" in include:
+            self._filters = [f for f in self._filters if f.name != name]
 
     def remove_filters(self) -> None:
         """Remove all filters from the image processing pipeline."""
         self._filters = []
 
-    def _get_operations(self) -> list[Operation]:
-        """Get the list of operations.
+    def remove_operations(self) -> None:
+        """Remove all operations from the image processing pipeline."""
+        self._operations = []
 
-        Returns:
-            A list of Operation objects.
-        """
-        return self._operations.copy()
-
-    def _add_filters_to_operation(self) -> bool:
-        """Add filters to the operations list.
-
-        Returns:
-            True if filters were added, False otherwise.
-        """
-
-        filters = [
-            f"{f.name}({','.join(str(a) for a in f.args if a is not None) if isinstance(f.args, Iterable) else str(f.args)})"
-            for f in self._filters
-        ]
-
-        if filters:
-            self.add_operation("filters", "filters:" + ":".join(filters))
-        return bool(filters)
-
-    def _clone(self) -> "BaseImage":
-        """Create a copy of the current instance.
-
-        Returns:
-            A new instance with the same configuration and operations.
-        """
-        new = self.__class__(
-            base_url=self._base_url,
-            image=self._image,
-            signer=self._signer,
-        )
-        new._operations = self._operations.copy()
-        new._filters = self._filters.copy()
-        return new
-
-    @chained_method
+    @chain
     def with_image(self, image: str) -> Self:
         """Set the source image.
 
@@ -250,25 +219,7 @@ class BaseImage(ABC):
         """
         self._image = image.lstrip("/")
 
-    @chained_method
-    def sign(self, unsafe: bool = False, signer: Signer | None = None) -> None:
-        """Set the signer.
-
-        Args:
-            unsafe: If True, skip URL signing even if a key is configured.
-            signer: The signer to use. If None the default is used.
-        """
-        if signer:
-            self._signer = signer
-        if unsafe:
-            self._signer = None
-
-    @chained_method
-    def unsafe(self) -> None:
-        """Set the signer to unsafe."""
-        self._signer = None
-
-    @chained_method
+    @chain
     def with_base(self, base_url: str) -> Self:
         """Set the base URL of the Imagor/Thumbor server.
 
@@ -276,6 +227,46 @@ class BaseImage(ABC):
             base_url: Base URL of the server.
         """
         self._base_url = base_url.rstrip("/")
+
+    def path(
+        self,
+        with_image: str | None = None,
+        encode_image: bool = True,
+        signer: Signer | None = None,
+    ) -> str:
+        """Generate the URL path with all operations and filters applied.
+
+        Args:
+            unsafe: If True, skip URL signing even if a key is configured.
+            with_image: The image to use. If None, the default image is used.
+            encode_image: Whether to encode the image path.
+            signer: The signer to use. If None the default is used.
+
+        Returns:
+            The generated URL path.
+        """
+        raise NotImplementedError
+
+    def url(
+        self,
+        with_image: str | None = None,
+        with_base: str | None = None,
+        signer: Signer | None = None,
+    ) -> str:
+        """Generate the full URL.
+
+        Args:
+            with_image: The image to use. If None, the default image is used.
+            unsafe: If True, skip URL signing even if a key is configured.
+            with_base: The base URL to use. If None, the default base URL is used.
+            signer: The signer to use. If None the default is used.
+
+        Returns:
+            The complete URL with all operations and filters applied.
+        """
+        path = self.path(with_image=with_image, signer=signer)
+        base_url = with_base or self._base_url
+        return f"{base_url}/{path}" if base_url else path
 
     def sign_path(self, path: str, signer: Signer | None = None) -> str:
         """Sign a URL path using HMAC.
@@ -311,6 +302,55 @@ class BaseImage(ABC):
             signature_base64[: signer.truncate] if signer.truncate else signature_base64
         )
 
+    def _clone(self) -> "BaseImage":
+        """Create a copy of the current instance.
+
+        Returns:
+            A new instance with the same configuration and operations.
+        """
+        new = self.__class__(
+            base_url=self._base_url,
+            image=self._image,
+            signer=self._signer,
+        )
+        new._operations = self._operations.copy()
+        new._filters = self._filters.copy()
+        return new
+
+    ## TODO: move
+
+    def encode_image_path(self, path: str) -> str:
+        """Encode the image path with [`urllib.parse.quote`](https://docs.python.org/3/library/urllib.parse.html#urllib.parse.quote)."""
+        return quote(path, safe="")
+
+    @chain
+    def sign(self, unsafe: bool = False, signer: Signer | None = None) -> Self:
+        """Set the signer.
+
+        Args:
+            unsafe: If True, skip URL signing even if a key is configured.
+            signer: The signer to use. If None the default is used.
+        """
+        if signer:
+            self._signer = signer
+        if unsafe:
+            self._signer = None
+
+    @chain
+    def unsafe(self) -> Self:
+        """Set the signer to unsafe."""
+        self._signer = None
+
+    @property
+    def op_order(self) -> tuple[str, ...]:
+        """Returns the operation order"""
+        return self._op_order or THUMBOR_OP_ORDER
+
+    @op_order.setter
+    def op_order(self, value: tuple[str, ...]) -> None:
+        """Sets the operation order"""
+        self._op_order = value
+
     def _get_ordered_operations(self) -> list[str]:
         """Get operations in the correct order.
 
@@ -320,73 +360,38 @@ class BaseImage(ABC):
         ops_dict = {op.name: op.arg or op.name for op in self._get_operations()}
         return [ops_dict[op_name] for op_name in self.op_order if op_name in ops_dict]
 
-    def path(
-        self,
-        unsafe: bool = False,
-        with_image: str | None = None,
-        encode_image: bool = True,
-        signer: Signer | None = None,
-    ) -> str:
-        """Generate the URL path with all operations and filters applied.
-
-        Args:
-            unsafe: If True, skip URL signing even if a key is configured.
-            with_image: The image to use. If None, the default image is used.
-            encode_image: Whether to encode the image path.
-            signer: The signer to use. If None the default is used.
+    def _get_operations(self) -> list[Operation]:
+        """Get the list of operations.
 
         Returns:
-            The generated URL path.
+            A list of Operation objects.
         """
-        self._add_filters_to_operation()
-        with_image = (with_image or "" if self._image is None else self._image).strip(
-            "/"
-        )
-        if encode_image:
-            with_image = self.encode_image_path(with_image)
-        parts = self._get_ordered_operations() + [with_image]
-        path = "/".join(parts).strip("/")
-        signer = signer or self._signer
-        if unsafe or not signer:
-            signature = "unsafe"
-        else:
-            signature = self.sign_path(path=path, signer=signer)
-        return f"{signature}/{path}"
+        return self._operations.copy()
 
-    def encode_image_path(self, path: str) -> str:
-        """Encode the image path with [`urllib.parse.quote`](https://docs.python.org/3/library/urllib.parse.html#urllib.parse.quote)."""
-        return quote(path, safe="")
-
-    def url(
-        self,
-        with_image: str | None = None,
-        unsafe: bool = False,
-        with_base: str | None = None,
-        signer: Signer | None = None,
-    ) -> str:
-        """Generate the full URL.
-
-        Args:
-            with_image: The image to use. If None, the default image is used.
-            unsafe: If True, skip URL signing even if a key is configured.
-            with_base: The base URL to use. If None, the default base URL is used.
-            signer: The signer to use. If None the default is used.
+    def _add_filters_to_operation(self) -> bool:
+        """Add filters to the operations list.
 
         Returns:
-            The complete URL with all operations and filters applied.
+            True if filters were added, False otherwise.
         """
-        path = self.path(with_image=with_image, unsafe=unsafe, signer=signer)
-        base_url = with_base or self._base_url
-        return f"{base_url}/{path}" if base_url else path
+
+        filters = [
+            f"{f.name}({','.join(str(a) for a in f.args if a is not None) if isinstance(f.args, Iterable) else str(f.args)})"
+            for f in self._filters
+        ]
+
+        if filters:
+            self.add_operation("filters", "filters:" + ":".join(filters))
+        return bool(filters)
 
     # Common operations
 
-    @operation
+    @chain
     def trim(self) -> Self:
         """Trim the image."""
         self.add_operation("trim")
 
-    @operation
+    @chain
     def crop(
         self,
         left: int | float,
@@ -412,7 +417,7 @@ class BaseImage(ABC):
         if valign:
             self.add_operation("valign", valign)
 
-    @operation
+    @chain
     def fit_in(self, width: int, height: int) -> Self:
         """Fit the image within the specified dimensions while preserving aspect ratio.
 
@@ -426,7 +431,7 @@ class BaseImage(ABC):
         self.add_operation("fit-in")
         self.add_operation("resize", f"{width}x{height}")
 
-    @operation
+    @chain
     def resize(
         self, width: int, height: int, method: Literal["fit-in", "stretch"] = "fit-in"
     ) -> Self:
@@ -442,8 +447,15 @@ class BaseImage(ABC):
         self.add_operation(method)
         self.add_operation("resize", f"{width}x{height}")
 
+    @chain
+    def meta(
+        self,
+    ) -> Self:
+        """Shows meta information of the image."""
+        self.add_operation("meta")
+
     # ===== Common Filters =====
-    @filter
+    @chain
     def background_color(self, color: str) -> Self:
         """The `background_color` filter sets the background layer to the specified color.
         This is specifically useful when converting transparent images (PNG) to JPEG.
@@ -453,7 +465,7 @@ class BaseImage(ABC):
         """
         self.add_filter("background_color", color.removeprefix("#").lower())
 
-    @filter
+    @chain
     def blur(self, radius: int, sigma: int | None = None) -> Self:
         """Apply gaussian blur to the image.
 
@@ -468,7 +480,7 @@ class BaseImage(ABC):
             assert 0 <= sigma <= 150, "Sigma must be between 0 and 150"
             self.add_filter("blur", f"{radius},{sigma}")
 
-    @filter
+    @chain
     def brightness(self, amount: int) -> Self:
         """Adjust brightness of the image.
 
@@ -479,7 +491,7 @@ class BaseImage(ABC):
         assert -100 <= amount <= 100, "Amount must be between -100 and 100"
         self.add_filter("brightness", amount)
 
-    @filter
+    @chain
     def contrast(self, amount: int) -> Self:
         """Adjust contrast of the image.
 
@@ -490,7 +502,7 @@ class BaseImage(ABC):
         assert -100 <= amount <= 100, "Amount must be between -100 and 100"
         self.add_filter("brightness_contrast", amount)
 
-    @filter
+    @chain
     def rgb(
         self,
         r: float = 0,
@@ -506,7 +518,7 @@ class BaseImage(ABC):
         """
         self.add_filter("rgb", r, g, b)
 
-    @filter
+    @chain
     def focal(
         self,
         left: int,
@@ -524,7 +536,7 @@ class BaseImage(ABC):
         """
         self.add_filter("focal", f"{left}x{top}:{right}x{bottom}")
 
-    @filter
+    @chain
     def quality(self, amount: int) -> Self:
         """Set the image quality (JPEG only).
 
@@ -547,8 +559,74 @@ class BaseImage(ABC):
 class BaseImagorThumbor(BaseImage):
     """Base class with operations and filters common to both Imagor and Thumbor."""
 
+    def path(
+        self,
+        with_image: str | None = None,
+        encode_image: bool = True,
+        signer: Signer | None = None,
+    ) -> str:
+        """Generate the URL path with all operations and filters applied.
+
+        Args:
+            unsafe: If True, skip URL signing even if a key is configured.
+            with_image: The image to use. If None, the default image is used.
+            encode_image: Whether to encode the image path.
+            signer: The signer to use. If None the default is used.
+
+        Returns:
+            The generated URL path.
+        """
+        self._add_filters_to_operation()
+        with_image = (with_image or "" if self._image is None else self._image).strip(
+            "/"
+        )
+        if encode_image:
+            with_image = self.encode_image_path(with_image)
+        parts = self._get_ordered_operations() + [with_image]
+        path = "/".join(parts).strip("/")
+        signer = signer or self._signer
+        if not signer:
+            signature = "unsafe"
+        else:
+            signature = self.sign_path(path=path, signer=signer)
+        return f"{signature}/{path}"
+
+    def sign_path(self, path: str, signer: Signer | None = None) -> str:
+        """Sign a URL path using HMAC.
+
+        Args:
+            path: The URL path to sign. The path is not encoded, this needs to be done previously.
+            signer: The signer to use. If None the default is used.
+
+        Returns:
+            The signature.
+
+        Raises:
+            ValueError: If no key is configured for signing.
+        """
+        signer = signer or self._signer
+        if signer.unsafe:
+            return "unsafe"
+        if not signer:
+            raise ValueError("Signing object is required for URL signing")
+        if not signer.key:
+            raise ValueError("Signing key is required for URL signing")
+
+        hash_fn = getattr(hashlib, signer.type)
+        if not hash_fn:
+            raise ValueError(f"Unsupported signer type: {signer.type}")
+
+        hasher = hmac.new(
+            signer.key.encode("utf-8"), path.encode("utf-8"), digestmod=hash_fn
+        )
+        signature = hasher.digest()
+        signature_base64 = base64.urlsafe_b64encode(signature).decode("utf-8")
+        return (
+            signature_base64[: signer.truncate] if signer.truncate else signature_base64
+        )
+
     # ===== Common Operations =====
-    @operation
+    @chain
     def halign(self, halign: Literal["left", "center", "right"]) -> Self:
         """Set the horizontal alignment of the image.
 
@@ -557,7 +635,7 @@ class BaseImagorThumbor(BaseImage):
         """
         self.add_operation("halign", halign)
 
-    @operation
+    @chain
     def valign(self, valign: Literal["top", "middle", "bottom"]) -> Self:
         """Set the vertical alignment of the image.
 
@@ -566,7 +644,7 @@ class BaseImagorThumbor(BaseImage):
         """
         self.add_operation("valign", valign)
 
-    @operation
+    @chain
     def fit_in(self, width: int, height: int) -> Self:
         """Fit the image within the specified dimensions while preserving aspect ratio.
 
@@ -576,18 +654,18 @@ class BaseImagorThumbor(BaseImage):
         """
         self.add_operation("fit-in", f"{width}x{height}")
 
-    @operation
+    @chain
     def smart_crop(self) -> Self:
         """Enable smart cropping to detect the region of interest."""
         self.add_operation("smart")
 
     # ===== Common Filters =====
-    @filter
+    @chain
     def grayscale(self) -> Self:
         """Convert the image to grayscale."""
         self.add_filter("grayscale")
 
-    @filter
+    @chain
     def quality(self, amount: int) -> Self:
         """Set the quality of the output image.
 
@@ -596,7 +674,7 @@ class BaseImagorThumbor(BaseImage):
         """
         self.add_filter("quality", str(amount))
 
-    @filter
+    @chain
     def format(self, fmt: str) -> Self:
         """Set the output format of the image.
 
@@ -605,27 +683,27 @@ class BaseImagorThumbor(BaseImage):
         """
         self.add_operation("format", fmt.lower())
 
-    @filter
+    @chain
     def strip_exif(self) -> Self:
         """Remove EXIF metadata from the image."""
         self.add_filter("strip_exif")
 
-    @filter
+    @chain
     def strip_icc(self) -> Self:
         """Remove ICC profile from the image."""
         self.add_filter("strip_icc")
 
-    @filter
+    @chain
     def upscale(self) -> Self:
         """Allow upscaling the image beyond its original dimensions."""
         self.remove("no_upscale")
 
-    @filter
+    @chain
     def no_upscale(self) -> Self:
         """Prevent upscaling the image beyond its original dimensions."""
         self.add_filter("no_upscale")
 
-    @filter
+    @chain
     def max_bytes(self, amount: int) -> Self:
         """Set the maximum file size in bytes for the output image.
 
@@ -634,7 +712,7 @@ class BaseImagorThumbor(BaseImage):
         """
         self.add_filter("max_bytes", amount)
 
-    @filter
+    @chain
     def proportion(self, percentage: float) -> Self:
         """Scale the image to the specified percentage of its original size.
 
@@ -644,7 +722,7 @@ class BaseImagorThumbor(BaseImage):
         assert 0 <= percentage <= 100, "Percentage must be between 0 and 100"
         self.add_filter("proportion", round(percentage / 100, 1))
 
-    @filter
+    @chain
     def rotate(self, angle: int) -> Self:
         """Rotate the given image by the specified angle after processing.
 
@@ -657,7 +735,7 @@ class BaseImagorThumbor(BaseImage):
             raise ValueError("Rotation angle must be a multiple of 90 degrees")
         self.add_filter("rotate", angle)
 
-    @filter
+    @chain
     def brightness(self, amount: float) -> Self:
         """Adjust the image brightness.
 
@@ -666,7 +744,7 @@ class BaseImagorThumbor(BaseImage):
         """
         self.add_filter("brightness", str(amount))
 
-    @filter
+    @chain
     def contrast(self, amount: float) -> Self:
         """Adjust the image contrast.
 
@@ -675,7 +753,7 @@ class BaseImagorThumbor(BaseImage):
         """
         self.add_filter("contrast", str(amount))
 
-    @filter
+    @chain
     def saturation(self, amount: float) -> Self:
         """Adjust the image saturation.
 
@@ -684,7 +762,7 @@ class BaseImagorThumbor(BaseImage):
         """
         self.add_filter("saturation", str(amount))
 
-    @filter
+    @chain
     def sharpen(self, sigma: float, amount: float = 1.0) -> Self:
         """Sharpen the image.
 

@@ -9,14 +9,14 @@ from __future__ import annotations
 from typing import Literal, Optional, Self
 from urllib.parse import quote
 
-from pymagor._core import BaseImagorThumbor, filter, operation
+from pymagor._core import BaseImagorThumbor, chain
 
 
 class Imagor(BaseImagorThumbor):
     """Imagor image processor with Imagor-specific operations and filters."""
 
     # ===== Operations =====
-    @operation
+    @chain
     def fit_in(self, width: int, height: int, upscale: bool = False) -> Self:
         """Fit the image within the specified dimensions while preserving aspect ratio.
 
@@ -32,7 +32,7 @@ class Imagor(BaseImagorThumbor):
         if upscale:
             self.add_filter("upscale")
 
-    @operation
+    @chain
     def stretch(self, width: int, height: int) -> Self:
         """Stretch the image to the exact dimensions without preserving aspect ratio.
 
@@ -46,15 +46,8 @@ class Imagor(BaseImagorThumbor):
         self.add_operation("stretch")
         self.add_operation("resize", f"{width}x{height}")
 
-    @operation
-    def meta(
-        self,
-    ) -> Self:
-        """Shows meta information of the image."""
-        self.add_operation("meta")
-
     # ===== Filters =====
-    @filter
+    @chain
     def focal(
         self,
         left: int | float | None = None,
@@ -98,7 +91,7 @@ class Imagor(BaseImagorThumbor):
             ), "top, left, right, bottom must not be specified if x is specified"
             self.add_filter("focal", f"{x}x{y}")
 
-    @filter
+    @chain
     def page(self, num: int) -> Self:
         """Select a specific page from a multi-page document.
 
@@ -107,7 +100,7 @@ class Imagor(BaseImagorThumbor):
         """
         self.add_filter("page", num)
 
-    @filter
+    @chain
     def dpi(self, dpi: int) -> Self:
         """Set the DPI for vector images like PDF or SVG.
 
@@ -116,7 +109,7 @@ class Imagor(BaseImagorThumbor):
         """
         self.add_filter("dpi", dpi)
 
-    @operation
+    @chain
     def orient(self, angle: int) -> Self:
         """Rotate the image before resizing and cropping.
 
@@ -129,7 +122,7 @@ class Imagor(BaseImagorThumbor):
             raise ValueError("Rotation angle must be a multiple of 90 degrees")
         self.add_operation("orient", str(angle))
 
-    @filter
+    @chain
     def fill(self, color: str | Literal["blur", "auto", "none"] | None = None) -> Self:
         """Fill the missing area or transparent image with the specified color.
 
@@ -140,7 +133,7 @@ class Imagor(BaseImagorThumbor):
             color = "none"
         self.add_filter("fill", color)
 
-    @filter
+    @chain
     def hue(self, angle: int) -> Self:
         """Adjust the hue of the image.
 
@@ -150,7 +143,7 @@ class Imagor(BaseImagorThumbor):
         assert 0 <= angle <= 359, "Angle must be between 0 and 359"
         self.add_filter("hue", angle)
 
-    @filter
+    @chain
     def round_corner(
         self, rx: int, ry: Optional[int] = None, color: str = "000000"
     ) -> Self:
@@ -166,7 +159,7 @@ class Imagor(BaseImagorThumbor):
         color = color.lstrip("#").lower()
         self.add_filter("round_corner", f"{rx},{ry},{color}")
 
-    @filter
+    @chain
     def watermark(
         self,
         image: str,
@@ -189,7 +182,7 @@ class Imagor(BaseImagorThumbor):
         image = quote(image, safe="")
         self.add_filter("watermark", image, x, y, alpha, w_ratio, h_ratio)
 
-    @filter
+    @chain
     def label(
         self,
         text: str,
@@ -218,12 +211,12 @@ class Imagor(BaseImagorThumbor):
             args.append(font)
         self.add_filter("label", ",".join(args))
 
-    @filter
+    @chain
     def strip_metadata(self) -> Self:
         """Remove all metadata from the image."""
         self.add_filter("strip_metadata")
 
-    @operation
+    @chain
     def max_frames(self, n: int) -> Self:
         """Limit the number of frames in an animated image.
 
@@ -232,7 +225,7 @@ class Imagor(BaseImagorThumbor):
         """
         self.add_operation("max_frames", str(n))
 
-    @filter
+    @chain
     def upscale(self) -> Self:
         """upscale the image if fit-in is used"""
         self.add_filter("upscale")

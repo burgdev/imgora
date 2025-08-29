@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import List, Literal, Self
 
 from pymagor._converter import color_html_to_rgb
-from pymagor._core import BaseImagorThumbor, filter, operation
+from pymagor._core import BaseImagorThumbor, chain
 
 
 class Thumbor(BaseImagorThumbor):
@@ -19,7 +19,7 @@ class Thumbor(BaseImagorThumbor):
 
     # ===== Operations =====
     # compared to imagor it adds method as well.
-    @operation
+    @chain
     def fit_in(
         self, width: int, height: int, method: Literal["full", "adaptive"] | None = None
     ) -> Self:
@@ -44,12 +44,12 @@ class Thumbor(BaseImagorThumbor):
         self.add_operation("resize", f"{width}x{height}")
 
     # ===== Filters =====
-    @filter
+    @chain
     def auto_jpg(self) -> Self:
         """Automatically convert to JPEG (overwrite `AUTO_PNG_TO_JPG` variable)."""
         self.add_filter("autojpg")
 
-    @filter
+    @chain
     def convolution(
         self,
         matrix: List[List[float]],
@@ -72,24 +72,24 @@ class Thumbor(BaseImagorThumbor):
             "convolution", matrix_str, str(number_of_columns), str(normalize).lower()
         )
 
-    @filter
+    @chain
     def cover(self) -> Self:
         """This filter is used in GIFs to extract their first frame as the image to be used as cover."""
         self.add_filter("cover")
 
-    @filter
+    @chain
     def equalize(self) -> Self:
         """This filter equalizes the color distribution in the image."""
         self.add_filter("equalize")
 
-    @filter
+    @chain
     def extract_focal(self) -> Self:
         """Extract the focal points from the image.
 
         [More information](https://thumbor.readthedocs.io/en/latest/extract_focal_points.html)"""
         self.add_filter("extract_focal")
 
-    @filter
+    @chain
     def fill(
         self,
         color: str,
@@ -109,7 +109,7 @@ class Thumbor(BaseImagorThumbor):
             "fill", color.removeprefix("#").lower(), str(fill_transparent).lower()
         )
 
-    @filter
+    @chain
     def format(
         self,
         fmt: Literal["jpeg", "jpg", "png", "webp", "gif"],
@@ -128,7 +128,7 @@ class Thumbor(BaseImagorThumbor):
             self.add_filter("quality", quality)
         self.add_filter("format", fmt)
 
-    @filter
+    @chain
     def noise(self, amount: int) -> Self:
         """Add noise to the image.
 
@@ -138,7 +138,7 @@ class Thumbor(BaseImagorThumbor):
         assert 0 <= amount <= 100, "Amount must be between 0 and 100"
         self.add_filter("noise", str(amount))
 
-    @filter
+    @chain
     def quality(self, amount: int) -> Self:
         """Set the quality of the output image.
 
@@ -148,12 +148,12 @@ class Thumbor(BaseImagorThumbor):
         assert 1 <= amount <= 100, "Quality must be between 1 and 100"
         self.add_filter("quality", amount)
 
-    @filter
+    @chain
     def red_eye(self) -> Self:
         """Automatically detect and correct red-eye in photos."""
         self.add_filter("redeye")
 
-    @filter
+    @chain
     def round_corner(
         self,
         rx: int,
@@ -184,7 +184,7 @@ class Thumbor(BaseImagorThumbor):
             radius = rx
         self.add_filter("round_corner", radius, *color, transparent)
 
-    @filter
+    @chain
     def saturation(self, amount: float) -> Self:
         """Adjust the image saturation.
 
@@ -195,7 +195,7 @@ class Thumbor(BaseImagorThumbor):
         assert -100 <= amount <= 100, "Amount must be between -100 and 100"
         self.add_filter("saturation", str(amount))
 
-    @filter
+    @chain
     def sharpen(
         self, amount: float, radius: float = 1.0, luminance_only: bool = True
     ) -> Self:
@@ -208,18 +208,18 @@ class Thumbor(BaseImagorThumbor):
         """
         self.add_filter("sharpen", amount, radius, str(luminance_only).lower())
 
-    @filter
+    @chain
     def stretch(self) -> Self:
         """This filter stretches the image until it fits the required width and height, instead of cropping the image."""
         self.add_filter("stretch")
 
-    @filter
+    @chain
     def strip_metadata(self) -> Self:
         """Remove all metadata from the image."""
         self.add_filter("strip_exif")
         self.add_filter("strip_icc")
 
-    @filter
+    @chain
     def upscale(self) -> Self:
         """Enable upscaling of the image beyond its original dimensions.
         This only makes sense with `fit-in` or `adaptive-fit-in`.

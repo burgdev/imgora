@@ -29,12 +29,12 @@ from __future__ import annotations
 from functools import wraps
 from typing import Any, Callable, TypeVar, cast
 
-__all__ = ["chained_method", "operation", "filter"]
+__all__ = ["chain"]
 
 _F = TypeVar("_F", bound=Callable[..., Any])
 
 
-def chained_method(method: _F) -> _F:
+def chain(method: _F) -> _F:
     """Decorator for methods that return a new instance with modifications.
 
     The decorated method should modify the instance in-place and not return anything.
@@ -49,11 +49,3 @@ def chained_method(method: _F) -> _F:
 
     # The cast is important for type checking and IDE support
     return cast(_F, wrapper)
-
-
-# Alias for backward compatibility
-operation = chained_method
-"""Decorator for methods that return a new instance with modifications."""
-
-filter = chained_method
-"""Decorator for methods that return a new instance with modifications."""
