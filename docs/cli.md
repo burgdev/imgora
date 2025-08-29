@@ -8,7 +8,7 @@ pymagor -h
 
 ::: mkdocs-click
   :module: pymagor.cli
-  :command: cli
+  :command: main
   :prog_name: pymagor
   :depth: 1
   :style: plain

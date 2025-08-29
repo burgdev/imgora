@@ -6,9 +6,9 @@ functionality on top of the base image processing operations.
 
 from __future__ import annotations
 
-from typing import List, Literal
+from typing import List, Literal, Self
 
-from pymagor._colors import html_to_rgb
+from pymagor._converter import color_html_to_rgb
 from pymagor._core import BaseImagorThumbor, filter, operation
 
 
@@ -22,7 +22,7 @@ class Thumbor(BaseImagorThumbor):
     @operation
     def fit_in(
         self, width: int, height: int, method: Literal["full", "adaptive"] | None = None
-    ) -> None:
+    ) -> Self:
         """Fit the image within the specified dimensions while preserving aspect ratio.
 
         Fit-in means that the generated image should not be auto-cropped and otherwise just fit in an imaginary box specified by `ExF`.
@@ -45,7 +45,7 @@ class Thumbor(BaseImagorThumbor):
 
     # ===== Filters =====
     @filter
-    def auto_jpg(self) -> None:
+    def auto_jpg(self) -> Self:
         """Automatically convert to JPEG (overwrite `AUTO_PNG_TO_JPG` variable)."""
         self.add_filter("autojpg")
 
@@ -54,7 +54,7 @@ class Thumbor(BaseImagorThumbor):
         self,
         matrix: List[List[float]],
         normalize: bool = True,
-    ) -> None:
+    ) -> Self:
         """This filter runs a convolution matrix (or kernel) on the image.
         See [Kernel (image processing)](https://en.wikipedia.org/wiki/Kernel_(image_processing)) for details on the process.
         Edge pixels are always extended outside the image area.
@@ -73,17 +73,17 @@ class Thumbor(BaseImagorThumbor):
         )
 
     @filter
-    def cover(self) -> None:
+    def cover(self) -> Self:
         """This filter is used in GIFs to extract their first frame as the image to be used as cover."""
         self.add_filter("cover")
 
     @filter
-    def equalize(self) -> None:
+    def equalize(self) -> Self:
         """This filter equalizes the color distribution in the image."""
         self.add_filter("equalize")
 
     @filter
-    def extract_focal(self) -> None:
+    def extract_focal(self) -> Self:
         """Extract the focal points from the image.
 
         [More information](https://thumbor.readthedocs.io/en/latest/extract_focal_points.html)"""
@@ -94,7 +94,7 @@ class Thumbor(BaseImagorThumbor):
         self,
         color: str,
         fill_transparent: bool = False,
-    ) -> None:
+    ) -> Self:
         """This filter returns an image sized exactly as requested independently of its ratio.
         It will fill the missing area with the specified color.
         It is usually combined with the `fit-in` or `adaptive-fit-in` options.
@@ -112,7 +112,7 @@ class Thumbor(BaseImagorThumbor):
     @filter
     def format(
         self, fmt: Literal["jpeg", "png", "webp", "gif"], quality: int | None = None
-    ) -> None:
+    ) -> Self:
         """Convert the image to the specified format.
 
         Args:
@@ -125,7 +125,7 @@ class Thumbor(BaseImagorThumbor):
         self.add_filter("format", fmt)
 
     @filter
-    def noise(self, amount: int) -> None:
+    def noise(self, amount: int) -> Self:
         """Add noise to the image.
 
         Args:
@@ -135,7 +135,7 @@ class Thumbor(BaseImagorThumbor):
         self.add_filter("noise", str(amount))
 
     @filter
-    def quality(self, amount: int) -> None:
+    def quality(self, amount: int) -> Self:
         """Set the quality of the output image.
 
         Args:
@@ -145,7 +145,7 @@ class Thumbor(BaseImagorThumbor):
         self.add_filter("quality", amount)
 
     @filter
-    def red_eye(self) -> None:
+    def red_eye(self) -> Self:
         """Automatically detect and correct red-eye in photos."""
         self.add_filter("redeye")
 
@@ -155,7 +155,7 @@ class Thumbor(BaseImagorThumbor):
         rx: int,
         ry: int | None = None,
         color: str | None | tuple[int, int, int] = None,
-    ) -> None:
+    ) -> Self:
         """Add rounded corners to the image.
 
         Args:
@@ -171,7 +171,7 @@ class Thumbor(BaseImagorThumbor):
             color = (255, 255, 255)  # white
             transparent = 1
         elif not isinstance(color, tuple):
-            color = html_to_rgb(color)
+            color = color_html_to_rgb(color)
 
         if ry is not None and rx != ry:
             radius = f"{rx}|{ry}"
@@ -181,7 +181,7 @@ class Thumbor(BaseImagorThumbor):
         self.add_filter("round_corner", radius, *color, transparent)
 
     @filter
-    def saturation(self, amount: float) -> None:
+    def saturation(self, amount: float) -> Self:
         """Adjust the image saturation.
 
         Args:
@@ -194,7 +194,7 @@ class Thumbor(BaseImagorThumbor):
     @filter
     def sharpen(
         self, amount: float, radius: float = 1.0, luminance_only: bool = True
-    ) -> None:
+    ) -> Self:
         """Sharpen the image.
 
         Args:
@@ -205,18 +205,18 @@ class Thumbor(BaseImagorThumbor):
         self.add_filter("sharpen", amount, radius, str(luminance_only).lower())
 
     @filter
-    def stretch(self) -> None:
+    def stretch(self) -> Self:
         """This filter stretches the image until it fits the required width and height, instead of cropping the image."""
         self.add_filter("stretch")
 
     @filter
-    def strip_metadata(self) -> None:
+    def strip_metadata(self) -> Self:
         """Remove all metadata from the image."""
         self.add_filter("strip_exif")
         self.add_filter("strip_icc")
 
     @filter
-    def upscale(self) -> None:
+    def upscale(self) -> Self:
         """Enable upscaling of the image beyond its original dimensions.
         This only makes sense with `fit-in` or `adaptive-fit-in`.
 

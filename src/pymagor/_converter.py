@@ -1,7 +1,7 @@
 import re
 
 
-def html_to_rgb(html_color: str) -> tuple[int, int, int]:
+def color_html_to_rgb(html_color: str) -> tuple[int, int, int]:
     """Convert HTML color string to RGB tuple.
 
     Supports formats:
@@ -13,7 +13,7 @@ def html_to_rgb(html_color: str) -> tuple[int, int, int]:
     Args:
         html_color: HTML color string to convert.
     """
-
+    # normalize
     html_color_stripped = (
         html_color.lower().strip().removeprefix("#").removesuffix(";").strip()
     )

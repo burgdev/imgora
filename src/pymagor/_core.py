@@ -11,7 +11,7 @@ import hashlib
 import hmac
 from abc import ABC
 from dataclasses import dataclass, field
-from typing import Any, Iterable, List, Literal
+from typing import Any, Iterable, List, Literal, Self
 from urllib.parse import quote
 
 from pymagor.decorator import chained_method, filter, operation
@@ -40,10 +40,12 @@ class Filter:
     """
 
     name: str
-    args: tuple[str, ...] = field(default_factory=tuple)
+    args: tuple[any, ...] = field(default_factory=tuple)
 
 
 class Signer:
+    """Signer class for URL signing."""
+
     def __init__(
         self,
         type: Literal["sha1", "sha256", "sha512"] = "sha1",
@@ -51,6 +53,13 @@ class Signer:
         key: str | None = None,
         unsafe: bool | None = None,
     ):
+        """
+        Args:
+            type: Hash algorithm for URL signing (sha1, sha256, sha512).
+            truncate: Number of characters to truncate the signature to, defaults to `None`
+            key: The signing key/secret, needs to be the same as defined in the Imagor/Thumbor server.
+            unsafe: Whether to disable signing, if no key is set it defaults to unsafe, but with this option you can override it.
+        """
         self._type = type
         self._truncate = truncate
         self._key = key
@@ -58,20 +67,26 @@ class Signer:
 
     @property
     def type(self) -> Literal["sha1", "sha256", "sha512"]:
+        """Hash algorithm for URL signing."""
         return self._type
 
     @property
     def truncate(self) -> int | None:
+        """Number of characters to truncate the signature to, defaults to `None`"""
         return self._truncate
 
     @property
     def key(self) -> str | None:
-        if self.unsafe:
+        """Secret key for URL signing, if `unsafe` is set it returns `None`."""
+        if self._unsafe:
             return None
         return self._key
 
     @property
     def unsafe(self) -> bool | None:
+        """Whether to disable signing."""
+        if self._key is None:
+            return True
         return self._unsafe
 
 
@@ -112,8 +127,7 @@ class BaseImage(ABC):
         Args:
             base_url: Base URL of the Imagor/Thumbor server.
             image: Path or URL of the source image.
-            signer_type: Hash algorithm for URL signing (sha1, sha256, sha512).
-            signer_truncate: Number of characters to truncate the signature to.
+            signer: The signer to use. If None the default is used.
         """
         self._base_url = base_url.rstrip("/")
         self._image = image.lstrip("/")
@@ -172,8 +186,10 @@ class BaseImage(ABC):
 
         For example:
 
-        >>> image.remove("crop")
-        >>> image.remove("upscale")
+        ```python
+        image.remove("crop")
+        image.remove("upscale")
+        ```
 
         Args:
             name: The name of the operation or filter to remove.
@@ -225,7 +241,7 @@ class BaseImage(ABC):
         return new
 
     @chained_method
-    def with_image(self, image: str) -> None:
+    def with_image(self, image: str) -> Self:
         """Set the source image.
 
         Args:
@@ -252,7 +268,7 @@ class BaseImage(ABC):
         self._signer = None
 
     @chained_method
-    def with_base(self, base_url: str) -> None:
+    def with_base(self, base_url: str) -> Self:
         """Set the base URL of the Imagor/Thumbor server.
 
         Args:
@@ -264,7 +280,7 @@ class BaseImage(ABC):
         """Sign a URL path using HMAC.
 
         Args:
-            path: The URL path to sign.
+            path: The URL path to sign. The path is not encoded, this needs to be done previously.
             signer: The signer to use. If None the default is used.
 
         Returns:
@@ -337,6 +353,7 @@ class BaseImage(ABC):
         return f"{signature}/{path}"
 
     def encode_image_path(self, path: str) -> str:
+        """Encode the image path with [`urllib.parse.quote`](https://docs.python.org/3/library/urllib.parse.html#urllib.parse.quote)."""
         return quote(path, safe="")
 
     def url(
@@ -364,7 +381,7 @@ class BaseImage(ABC):
     # Common operations
 
     @operation
-    def trim(self) -> None:
+    def trim(self) -> Self:
         """Trim the image."""
         self.add_operation("trim")
 
@@ -377,7 +394,7 @@ class BaseImage(ABC):
         bottom: int | float,
         halign: Literal["left", "center", "right"] | None = None,
         valign: Literal["top", "middle", "bottom"] | None = None,
-    ) -> None:
+    ) -> Self:
         """Crop the image. Coordinates are in pixel or float values between 0 and 1 (percentage of image dimensions)
 
         Args:
@@ -395,7 +412,7 @@ class BaseImage(ABC):
             self.add_operation("valign", valign)
 
     @operation
-    def fit_in(self, width: int, height: int) -> None:
+    def fit_in(self, width: int, height: int) -> Self:
         """Fit the image within the specified dimensions while preserving aspect ratio.
 
         Args:
@@ -411,7 +428,7 @@ class BaseImage(ABC):
     @operation
     def resize(
         self, width: int, height: int, method: Literal["fit-in", "stretch"] = "fit-in"
-    ) -> None:
+    ) -> Self:
         """Resize the image to the exact dimensions.
 
         Args:
@@ -426,7 +443,7 @@ class BaseImage(ABC):
 
     # ===== Common Filters =====
     @filter
-    def background_color(self, color: str) -> None:
+    def background_color(self, color: str) -> Self:
         """The `background_color` filter sets the background layer to the specified color.
         This is specifically useful when converting transparent images (PNG) to JPEG.
 
@@ -436,7 +453,7 @@ class BaseImage(ABC):
         self.add_filter("background_color", color.removeprefix("#").lower())
 
     @filter
-    def blur(self, radius: int, sigma: int | None = None) -> None:
+    def blur(self, radius: int, sigma: int | None = None) -> Self:
         """Apply gaussian blur to the image.
 
         Args:
@@ -451,7 +468,7 @@ class BaseImage(ABC):
             self.add_filter("blur", f"{radius},{sigma}")
 
     @filter
-    def brightness(self, amount: int) -> None:
+    def brightness(self, amount: int) -> Self:
         """Adjust brightness of the image.
 
         Args:
@@ -462,7 +479,7 @@ class BaseImage(ABC):
         self.add_filter("brightness", amount)
 
     @filter
-    def contrast(self, amount: int) -> None:
+    def contrast(self, amount: int) -> Self:
         """Adjust contrast of the image.
 
         Args:
@@ -478,7 +495,7 @@ class BaseImage(ABC):
         r: float = 0,
         g: float = 0,
         b: float = 0,
-    ) -> None:
+    ) -> Self:
         """Adjust the RGB channels of the image.
 
         Args:
@@ -495,7 +512,7 @@ class BaseImage(ABC):
         top: int,
         right: int,
         bottom: int,
-    ) -> None:
+    ) -> Self:
         """Set the focal point of the image, which is used in later transforms (e.g. `crop`).
 
         Args:
@@ -507,7 +524,7 @@ class BaseImage(ABC):
         self.add_filter("focal", f"{left}x{top}:{right}x{bottom}")
 
     @filter
-    def quality(self, amount: int) -> None:
+    def quality(self, amount: int) -> Self:
         """Set the image quality (JPEG only).
 
         Args:
@@ -515,7 +532,7 @@ class BaseImage(ABC):
         """
         self.add_filter("quality", amount)
 
-    def radius(self, rx: int, ry: int | None = None, color: str | None = None) -> None:
+    def radius(self, rx: int, ry: int | None = None, color: str | None = None) -> Self:
         """Add rounded corners to the image (alias for round_corner).
 
         Args:
@@ -531,7 +548,7 @@ class BaseImagorThumbor(BaseImage):
 
     # ===== Common Operations =====
     @operation
-    def halign(self, halign: Literal["left", "center", "right"]) -> None:
+    def halign(self, halign: Literal["left", "center", "right"]) -> Self:
         """Set the horizontal alignment of the image.
 
         Args:
@@ -540,7 +557,7 @@ class BaseImagorThumbor(BaseImage):
         self.add_operation("halign", halign)
 
     @operation
-    def valign(self, valign: Literal["top", "middle", "bottom"]) -> None:
+    def valign(self, valign: Literal["top", "middle", "bottom"]) -> Self:
         """Set the vertical alignment of the image.
 
         Args:
@@ -549,7 +566,7 @@ class BaseImagorThumbor(BaseImage):
         self.add_operation("valign", valign)
 
     @operation
-    def fit_in(self, width: int, height: int) -> None:
+    def fit_in(self, width: int, height: int) -> Self:
         """Fit the image within the specified dimensions while preserving aspect ratio.
 
         Args:
@@ -559,18 +576,18 @@ class BaseImagorThumbor(BaseImage):
         self.add_operation("fit-in", f"{width}x{height}")
 
     @operation
-    def smart_crop(self) -> None:
+    def smart_crop(self) -> Self:
         """Enable smart cropping to detect the region of interest."""
         self.add_operation("smart")
 
     # ===== Common Filters =====
     @filter
-    def grayscale(self) -> None:
+    def grayscale(self) -> Self:
         """Convert the image to grayscale."""
         self.add_filter("grayscale")
 
     @filter
-    def quality(self, amount: int) -> None:
+    def quality(self, amount: int) -> Self:
         """Set the quality of the output image.
 
         Args:
@@ -579,7 +596,7 @@ class BaseImagorThumbor(BaseImage):
         self.add_filter("quality", str(amount))
 
     @filter
-    def format(self, fmt: str) -> None:
+    def format(self, fmt: str) -> Self:
         """Set the output format of the image.
 
         Args:
@@ -588,22 +605,22 @@ class BaseImagorThumbor(BaseImage):
         self.add_operation("format", fmt.lower())
 
     @filter
-    def strip_exif(self) -> None:
+    def strip_exif(self) -> Self:
         """Remove EXIF metadata from the image."""
         self.add_filter("strip_exif")
 
     @filter
-    def strip_icc(self) -> None:
+    def strip_icc(self) -> Self:
         """Remove ICC profile from the image."""
         self.add_filter("strip_icc")
 
     @filter
-    def no_upscale(self) -> None:
+    def no_upscale(self) -> Self:
         """Prevent upscaling the image beyond its original dimensions."""
         self.add_operation("no_upscale")
 
     @filter
-    def max_bytes(self, amount: int) -> None:
+    def max_bytes(self, amount: int) -> Self:
         """Set the maximum file size in bytes for the output image.
 
         Args:
@@ -612,7 +629,7 @@ class BaseImagorThumbor(BaseImage):
         self.add_filter("max_bytes", amount)
 
     @filter
-    def proportion(self, percentage: float) -> None:
+    def proportion(self, percentage: float) -> Self:
         """Scale the image to the specified percentage of its original size.
 
         Args:
@@ -622,7 +639,7 @@ class BaseImagorThumbor(BaseImage):
         self.add_filter("proportion", round(percentage / 100, 1))
 
     @filter
-    def rotate(self, angle: int) -> None:
+    def rotate(self, angle: int) -> Self:
         """Rotate the given image by the specified angle after processing.
 
         This is different from the 'orient' filter which rotates the image before processing.
@@ -635,7 +652,7 @@ class BaseImagorThumbor(BaseImage):
         self.add_filter("rotate", angle)
 
     @filter
-    def brightness(self, amount: float) -> None:
+    def brightness(self, amount: float) -> Self:
         """Adjust the image brightness.
 
         Args:
@@ -644,7 +661,7 @@ class BaseImagorThumbor(BaseImage):
         self.add_filter("brightness", str(amount))
 
     @filter
-    def contrast(self, amount: float) -> None:
+    def contrast(self, amount: float) -> Self:
         """Adjust the image contrast.
 
         Args:
@@ -653,7 +670,7 @@ class BaseImagorThumbor(BaseImage):
         self.add_filter("contrast", str(amount))
 
     @filter
-    def saturation(self, amount: float) -> None:
+    def saturation(self, amount: float) -> Self:
         """Adjust the image saturation.
 
         Args:
@@ -662,7 +679,7 @@ class BaseImagorThumbor(BaseImage):
         self.add_filter("saturation", str(amount))
 
     @filter
-    def sharpen(self, sigma: float, amount: float = 1.0) -> None:
+    def sharpen(self, sigma: float, amount: float = 1.0) -> Self:
         """Sharpen the image.
 
         Args:
@@ -678,18 +695,18 @@ if __name__ == "__main__":
     signer = Signer(key="my_key", type="sha256", truncate=None)
 
     # Create an Imagor processor and apply some transformations
-    img = (
-        BaseImagorThumbor(base_url="http://localhost:8018", signer=signer)
-        .with_image(image_url)
-        .crop(0.1, 0.1, 0.9, 0.9, halign="center", valign="middle")
-        .trim()
-        .rotate(90)
-        .radius(100)
-        # .round_corner(10, 30)
-        .resize(800, 600)  # Resize to 800x600
-        .blur(10)  # Apply blur with radius 3
-        .quality(40)  # Set quality to 85%
-    )
+    img = BaseImagorThumbor(base_url="http://localhost:8018", signer=signer)
+    img = img.with_image(image_url)
+
+    # .crop(0.1, 0.1, 0.9, 0.9, halign="center", valign="middle")
+    # .trim()
+    # .rotate(90)
+    # .radius(100)
+    ## .round_corner(10, 30)
+    # .resize(800, 600)  # Resize to 800x600
+    # .blur(10)  # Apply blur with radius 3
+    # .quality(40)  # Set quality to 85%
+    img.blur(5)
 
     # Get and print the processed URL
     print(img.path())

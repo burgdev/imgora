@@ -6,7 +6,7 @@ functionality on top of the base image processing operations.
 
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Literal, Optional, Self
 from urllib.parse import quote
 
 from pymagor._core import BaseImagorThumbor, filter, operation
@@ -17,7 +17,7 @@ class Imagor(BaseImagorThumbor):
 
     # ===== Operations =====
     @operation
-    def fit_in(self, width: int, height: int, upscale: bool = False) -> None:
+    def fit_in(self, width: int, height: int, upscale: bool = False) -> Self:
         """Fit the image within the specified dimensions while preserving aspect ratio.
 
         Args:
@@ -33,7 +33,7 @@ class Imagor(BaseImagorThumbor):
             self.add_filter("upscale")
 
     @operation
-    def stretch(self, width: int, height: int) -> None:
+    def stretch(self, width: int, height: int) -> Self:
         """Stretch the image to the exact dimensions without preserving aspect ratio.
 
         Args:
@@ -56,7 +56,7 @@ class Imagor(BaseImagorThumbor):
         bottom: int | float | None = None,
         x: int | float | None = None,
         y: int | float | None = None,
-    ) -> None:
+    ) -> Self:
         """Set the focal point of the image, which is used in later transforms (e.g. `crop`).
 
         The coordinates are either in pixel of float values between 0 and 1 (percentage of image dimensions)
@@ -92,7 +92,7 @@ class Imagor(BaseImagorThumbor):
             self.add_filter("focal", f"{x}x{y}")
 
     @filter
-    def page(self, num: int) -> None:
+    def page(self, num: int) -> Self:
         """Select a specific page from a multi-page document.
 
         Args:
@@ -101,7 +101,7 @@ class Imagor(BaseImagorThumbor):
         self.add_filter("page", num)
 
     @filter
-    def dpi(self, dpi: int) -> None:
+    def dpi(self, dpi: int) -> Self:
         """Set the DPI for vector images like PDF or SVG.
 
         Args:
@@ -110,7 +110,7 @@ class Imagor(BaseImagorThumbor):
         self.add_filter("dpi", dpi)
 
     @operation
-    def orient(self, angle: int) -> None:
+    def orient(self, angle: int) -> Self:
         """Rotate the image before resizing and cropping.
 
         This is different from the 'rotate' filter which rotates the image after processing.
@@ -123,7 +123,7 @@ class Imagor(BaseImagorThumbor):
         self.add_operation("orient", str(angle))
 
     @filter
-    def fill(self, color: str | Literal["blur", "auto", "none"] | None = None) -> None:
+    def fill(self, color: str | Literal["blur", "auto", "none"] | None = None) -> Self:
         """Fill the missing area or transparent image with the specified color.
 
         Args:
@@ -134,7 +134,7 @@ class Imagor(BaseImagorThumbor):
         self.add_filter("fill", color)
 
     @filter
-    def hue(self, angle: int) -> None:
+    def hue(self, angle: int) -> Self:
         """Adjust the hue of the image.
 
         Args:
@@ -146,7 +146,7 @@ class Imagor(BaseImagorThumbor):
     @filter
     def round_corner(
         self, rx: int, ry: Optional[int] = None, color: str = "000000"
-    ) -> None:
+    ) -> Self:
         """Add rounded corners to the image.
 
         Args:
@@ -168,7 +168,7 @@ class Imagor(BaseImagorThumbor):
         alpha: int = 0,
         w_ratio: Optional[float] = None,
         h_ratio: Optional[float] = None,
-    ) -> None:
+    ) -> Self:
         """Add a watermark to the image.
 
         Args:
@@ -192,7 +192,7 @@ class Imagor(BaseImagorThumbor):
         color: str,
         alpha: Optional[float] = None,
         font: Optional[str] = None,
-    ) -> None:
+    ) -> Self:
         """Add a text label to the image.
 
         Args:
@@ -212,12 +212,12 @@ class Imagor(BaseImagorThumbor):
         self.add_filter("label", ",".join(args))
 
     @filter
-    def strip_metadata(self) -> None:
+    def strip_metadata(self) -> Self:
         """Remove all metadata from the image."""
         self.add_filter("strip_metadata")
 
     @operation
-    def max_frames(self, n: int) -> None:
+    def max_frames(self, n: int) -> Self:
         """Limit the number of frames in an animated image.
 
         Args:
@@ -226,7 +226,7 @@ class Imagor(BaseImagorThumbor):
         self.add_operation("max_frames", str(n))
 
     @filter
-    def upscale(self) -> None:
+    def upscale(self) -> Self:
         """upscale the image if fit-in is used"""
         self.add_filter("upscale")
 
