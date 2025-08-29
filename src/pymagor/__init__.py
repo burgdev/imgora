@@ -25,6 +25,7 @@ from pymagor._core import (
 )
 from pymagor._imagor import Imagor  # noqa: F401
 from pymagor._thumbor import Thumbor  # noqa: F401
+from pymagor._wsrv_nl import WsrvNl  # noqa: F401
 
 __version__ = "0.0.1"
 __all__ = ["Imagor", "Thumbor", "Signer", "BaseImage", "Filter", "Operation"]

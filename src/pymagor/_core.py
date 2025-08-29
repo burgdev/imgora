@@ -93,7 +93,8 @@ class Signer:
 # /HASH|unsafe/trim/AxB:CxD/fit-in/stretch/-Ex-F/GxH:IxJ/HALIGN/VALIGN/smart/filters:NAME(ARGS):NAME(ARGS):.../IMAGE
 #
 THUMBOR_OP_ORDER = (
-    "unsafe",
+    "sign",
+    "meta",
     "trim",
     "crop",
     "fit-in",
@@ -178,7 +179,7 @@ class BaseImage(ABC):
                 else (),
             )
         if filter.name in (f.name for f in self._filters):
-            self._filters.remove(filter)
+            self._filters = [f for f in self._filters if f.name != filter.name]
         self._filters.append(filter)
 
     def remove(self, name: str) -> None:
@@ -615,9 +616,14 @@ class BaseImagorThumbor(BaseImage):
         self.add_filter("strip_icc")
 
     @filter
+    def upscale(self) -> Self:
+        """Allow upscaling the image beyond its original dimensions."""
+        self.remove("no_upscale")
+
+    @filter
     def no_upscale(self) -> Self:
         """Prevent upscaling the image beyond its original dimensions."""
-        self.add_operation("no_upscale")
+        self.add_filter("no_upscale")
 
     @filter
     def max_bytes(self, amount: int) -> Self:

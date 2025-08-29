@@ -3,11 +3,12 @@ import tempfile
 import webbrowser
 from pathlib import Path
 
-from pymagor import Imagor, Signer, Thumbor
+from pymagor import Imagor, Signer, Thumbor, WsrvNl
 
 # Configuration
 BASE_URL_IMAGOR = "http://localhost:8018"
 BASE_URL_THUMBOR = "http://localhost:8019"
+BASE_URL_WSRVN = "http://wsrv.nl"
 SIGNER_IMAGOR = Signer(key="my_key", type="sha256")
 SIGNER_THUMBOR = Signer(key="my_key", type="sha1")
 
@@ -61,7 +62,7 @@ def create_image_grid(transformations):
     )
 
     # Add transformed images
-    for name, imagor_url, thumbor_url in transformations:
+    for name, imagor_url, thumbor_url, wsrvnl_url in transformations:
         rows.append(
             f'<div class="comparison">'
             f"<h2>{name}</h2>"
@@ -73,6 +74,10 @@ def create_image_grid(transformations):
             f'<div class="image-container" style="flex: 1;">'
             f'<img src="{thumbor_url}" alt="Thumbor">'
             f'<div class="caption">Thumbor</div>'
+            f"</div>"
+            f'<div class="image-container" style="flex: 1;">'
+            f'<img src="{wsrvnl_url}" alt="Wsrv.nl">'
+            f'<div class="caption">Wsrv.nl</div>'
             f"</div>"
             "</div>"
             f"</div>"
@@ -95,15 +100,16 @@ def main():
     thumbor_image = Thumbor(BASE_URL_THUMBOR, signer=SIGNER_THUMBOR).with_image(
         IMAGE_URL
     )
-    images = imagor_image, thumbor_image
+    wsrvnl_image = WsrvNl(BASE_URL_WSRVN).with_image(IMAGE_URL)
+    images = imagor_image, thumbor_image, wsrvnl_image
     transformations = [
         (
             "Resize and Crop",
             *(img.crop(100, 100, 500, 400).resize(400, 300).url() for img in images),
         ),
         (
-            "Blur and Grayscale",
-            *(img.resize(400, 300).blur(3).grayscale().url() for img in images),
+            "Blur",
+            *(img.resize(400, 300).blur(3).url() for img in images),
         ),
         (
             "Rounded Corners",

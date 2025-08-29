@@ -111,14 +111,18 @@ class Thumbor(BaseImagorThumbor):
 
     @filter
     def format(
-        self, fmt: Literal["jpeg", "png", "webp", "gif"], quality: int | None = None
+        self,
+        fmt: Literal["jpeg", "jpg", "png", "webp", "gif"],
+        quality: int | None = None,
     ) -> Self:
         """Convert the image to the specified format.
 
         Args:
-            fmt: Output format (_jpeg_, _png_, _webp_, _gif_, etc.).
+            fmt: Output format (_jpeg_, _jpg_, _png_, _webp_, _gif_, etc.).
             quality: `1` to `100`. Quality setting for lossy formats (e.g. jpg, does nothing for _png_).
         """
+        if fmt == "jpg":
+            fmt = "jpeg"
         if quality is not None:
             assert 1 <= quality <= 100, "Quality must be between 1 and 100"
             self.add_filter("quality", quality)

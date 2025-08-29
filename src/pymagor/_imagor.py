@@ -46,6 +46,13 @@ class Imagor(BaseImagorThumbor):
         self.add_operation("stretch")
         self.add_operation("resize", f"{width}x{height}")
 
+    @operation
+    def meta(
+        self,
+    ) -> Self:
+        """Shows meta information of the image."""
+        self.add_operation("meta")
+
     # ===== Filters =====
     @filter
     def focal(
@@ -250,6 +257,6 @@ if __name__ == "__main__":
     # img = img.blur(10)
     img = img.rotate(90)
 
-    url = img.url()
+    url = img.meta().url()
     print(url)
     webbrowser.open(url)
