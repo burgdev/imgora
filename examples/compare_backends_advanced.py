@@ -7,13 +7,13 @@ It uses a declarative approach to define transformations and supports nested tra
 """
 
 import json
+import os
 import traceback
 import webbrowser
-import os
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import List, Type, Union
+from typing import Any, Dict, List, Optional, Type, Union
 
 import requests
 from jinja2 import Environment, FileSystemLoader
@@ -31,20 +31,14 @@ class MethodCall:
     """Represents a single method call with its arguments."""
 
     method_name: str
-    args: tuple = field(default_factory=tuple)
-    kwargs: dict = field(default_factory=dict)
-    name: str = ""
-    description: str = ""
-
-    def to_code(self) -> str:
-        """Convert the method call to a string of Python code."""
-        args_str = ", ".join([repr(arg) for arg in self.args])
-        kwargs_str = ", ".join([f"{k}={repr(v)}" for k, v in self.kwargs.items()])
-        all_args = ", ".join(filter(None, [args_str, kwargs_str]))
-        return f".{self.method_name}({all_args})"
+    args: List[Any] = field(default_factory=list)
+    kwargs: Dict[str, Any] = field(default_factory=dict)
 
     def __str__(self) -> str:
-        return self.to_code()
+        args_str = ", ".join(repr(arg) for arg in self.args)
+        kwargs_str = ", ".join(f"{k}={repr(v)}" for k, v in self.kwargs.items())
+        all_args = ", ".join(filter(None, [args_str, kwargs_str]))
+        return f".{self.method_name}({all_args})"
 
     def __repr__(self) -> str:
         return f"<MethodCall {self}>"
@@ -54,7 +48,7 @@ class MethodCall:
 class Chain:
     """Represents a chain of method calls."""
 
-    steps: List[Union[MethodCall, "Chain"]]
+    steps: List[MethodCall] = field(default_factory=list)
     name: str = ""
     description: str = ""
 
@@ -68,6 +62,22 @@ class Chain:
 
     def __repr__(self) -> str:
         return f"<Chain {self}>"
+
+
+@dataclass
+class TransformResult:
+    """Result of a transformation operation."""
+
+    success: bool
+    url: Optional[str]
+    method_calls: List[str]
+    meta: Dict[str, Any]
+    error: Optional[str] = None
+    traceback: Optional[str] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for template rendering."""
+        return asdict(self)
 
 
 class ImageComparator:
@@ -141,47 +151,45 @@ class ImageComparator:
         )
         return self
 
-    def _run_transform(self, backend, transform_steps):
+    def _run_transform(
+        self, backend: Any, transform_steps: List[Union[MethodCall, Chain]]
+    ) -> TransformResult:
         """
-        Apply a list of transformation steps to a backend instance.
+        Apply a series of transformation steps to a backend.
 
         Args:
             backend: The backend instance to transform
-            transform_steps: List of MethodCall or Chain objects
+            transform_steps: List of MethodCall or Chain objects representing the transformations
 
         Returns:
-            dict: Result information including URL, metadata, and any errors
+            TransformResult: The result of the transformation
         """
         try:
-            # Create a clone to avoid modifying the original
-            result = backend._clone()
-            method_calls = []
+            # Create a fresh copy of the backend for this transformation
+            current = backend._clone()
+            method_calls: List[str] = []
 
-            # Apply each transformation step
+            # Apply each step in the transformation
             for step in transform_steps:
-                if hasattr(step, "steps"):  # It's a Chain
+                if isinstance(step, Chain):  # It's a Chain
                     for sub_step in step.steps:
-                        method = getattr(result, sub_step.method_name)
-                        method(*sub_step.args, **sub_step.kwargs)
-                        method_calls.append(
-                            f".{sub_step.method_name}({', '.join(map(str, sub_step.args))})"
-                        )
+                        method = getattr(current, sub_step.method_name)
+                        current = method(*sub_step.args, **(sub_step.kwargs or {}))
+                        method_calls.append(str(sub_step))
                 else:  # It's a MethodCall
-                    method = getattr(result, step.method_name)
-                    method(*step.args, **step.kwargs)
-                    method_calls.append(
-                        f".{step.method_name}({', '.join(map(str, step.args))})"
-                    )
+                    method = getattr(current, step.method_name)
+                    current = method(*step.args, **(step.kwargs or {}))
+                    method_calls.append(str(step))
 
-            # Get the final URL
-            url = result.url()
+            # Get the final URL from the transformed backend
+            url = current.url()
 
             # Try to get metadata if available
-            meta = {}
-            if hasattr(result, "meta"):
+            meta: Dict[str, Any] = {}
+            if hasattr(current, "meta"):
                 try:
                     meta_result = requests.get(
-                        result.meta().url(),
+                        current.meta().url(),
                         headers={
                             "Accept": "application/json",
                             "User-Agent": "pymagor (https://github.com/burgdev/pymagor)",
@@ -191,23 +199,29 @@ class ImageComparator:
                 except Exception as e:
                     meta = {"error": f"Failed to get metadata: {str(e)}"}
 
-            return {
-                "success": True,
-                "url": url,
-                "method_calls": method_calls,
-                "meta": meta,
-                "error": None,
-            }
+            # Ensure we have a valid URL
+            if not url:
+                return TransformResult(
+                    success=False,
+                    url=None,
+                    method_calls=method_calls,
+                    meta=meta,
+                    error="Failed to generate URL after transformations",
+                )
+
+            return TransformResult(
+                success=True, url=url, method_calls=method_calls, meta=meta, error=None
+            )
 
         except Exception as e:
-            return {
-                "success": False,
-                "url": None,
-                "method_calls": method_calls if "method_calls" in locals() else [],
-                "meta": {},
-                "error": str(e),
-                "traceback": traceback.format_exc(),
-            }
+            return TransformResult(
+                success=False,
+                url=None,
+                method_calls=method_calls if "method_calls" in locals() else [],
+                meta={},
+                error=str(e),
+                traceback=traceback.format_exc(),
+            )
 
     def run(self, open_in_browser: bool = True) -> str:
         """
