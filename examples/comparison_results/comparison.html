@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en" class="uk-light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Backend Comparison</title>
+
+    <!-- UIkit CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.16.26/dist/css/uikit.min.css" />
+    <style>
+        /* Style for URL input */
+        .uk-form-icon-flip {
+            color: var(--uk-text-muted);
+            transition: color 0.2s ease-in-out;
+        }
+        .uk-form-icon-flip:hover {
+            color: var(--uk-link-color);
+        }
+        /* Ensure input text is visible in both themes */
+        [data-theme="light"] .uk-input {
+            color: #222 !important;
+        }
+        [data-theme="dark"] .uk-input {
+            color: #f5f5f5 !important;
+        }
+    </style>
+
+    <!-- UIkit JS -->
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.16.26/dist/js/uikit.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.16.26/dist/js/uikit-icons.min.js"></script>
+
+
+    <!-- Prism.js for syntax highlighting -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" id="prism-theme-dark" media="not all" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet" id="prism-theme-light" media="all" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+
+    <style>
+        /* Ensure full viewport height */
+        html, body {
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Base light theme */
+        :root {
+            --card-bg: #fff;
+            --card-color: #333;
+            --section-bg: #f8f8f8;
+            --section-color: #333;
+            --text-primary: #333;
+            --text-secondary: #666;
+            --border-color: #e5e5e5;
+        }
+
+        /* Dark theme overrides */
+        [data-theme="dark"] {
+            --card-bg: #1e1e1e;
+            --card-color: #f8f8f8;
+            --section-bg: #121212;
+            --section-color: #f8f8f8;
+            --text-primary: #f8f8f8;
+            --text-secondary: #bbb;
+            --border-color: #444;
+        }
+
+        /* Ensure text colors are properly set */
+        body {
+            color: var(--text-primary);
+        }
+
+        .uk-card {
+            color: var(--text-primary);
+        }
+
+        .uk-text-meta, .uk-text-muted {
+            color: var(--text-secondary) !important;
+        }
+
+        /* Apply theme colors */
+        body {
+            background-color: var(--section-bg);
+            color: var(--section-color);
+        }
+
+        .uk-card-default {
+            background-color: var(--card-bg);
+            color: var(--card-color);
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .uk-section-default {
+            background-color: var(--section-bg);
+        }
+
+        /* Ensure titles are visible in both themes */
+        .uk-card-title,
+        .uk-h1, .uk-h2, .uk-h3, .uk-h4, .uk-h5, .uk-h6,
+        .uk-heading-small, .uk-heading-medium, .uk-heading-large,
+        .uk-heading-xlarge, .uk-heading-2xlarge {
+            color: var(--text-primary) !important;
+        }
+
+        /* Code block styling */
+        .view-container[data-view="metadata"] > div {
+            border: 1px solid var(--card-border, #e5e5e5);
+            border-radius: 4px;
+            background: var(--card-bg, #fff);
+            padding: 10px;
+            height: 180px;
+            position: relative;
+            overflow: auto;
+            -webkit-overflow-scrolling: touch;
+            box-sizing: border-box;
+        }
+
+        .view-container[data-view="metadata"] > div > div {
+            padding: 5px 0;
+            box-sizing: border-box;
+            min-width: calc(100% - 20px);
+            display: inline-block;
+        }
+
+        /* Scrollbar styling */
+        .view-container[data-view="metadata"] > div {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0,0,0,0.2) transparent;
+        }
+
+        /* Webkit scrollbar */
+        .view-container[data-view="metadata"] > div::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        .view-container[data-view="metadata"] > div::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .view-container[data-view="metadata"] > div::-webkit-scrollbar-thumb {
+            background-color: rgba(0,0,0,0.2);
+            border-radius: 3px;
+            border: 2px solid transparent;
+            background-clip: content-box;
+        }
+
+        .view-container[data-view="metadata"] > div::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(0,0,0,0.3);
+        }
+
+        [data-theme="dark"] .view-container[data-view="metadata"] > div {
+            background: #1e1e1e;
+            border-color: #444;
+        }
+
+        .view-container[data-view="metadata"] pre {
+            margin: 0;
+            padding: 0 10px 0 0;
+            background: transparent !important;
+            border: none !important;
+            color: inherit;
+            white-space: pre;
+            font-family: monospace;
+            font-size: 0.9em;
+            line-height: 1.4;
+            display: inline-block;
+            min-width: 100%;
+        }
+
+        .view-container[data-view="metadata"] code {
+            white-space: pre !important;
+            word-break: normal !important;
+            word-wrap: normal !important;
+        }
+
+        /* Theme toggle button */
+        .uk-button-default {
+            background: #f8f8f8 !important;
+            color: #333 !important;
+            border: 1px solid #e5e5e5 !important;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        [data-theme="dark"] .uk-button-default {
+            background: #1e1e1e !important;
+            color: #f8f8f8 !important;
+            border-color: #444 !important;
+        }
+
+        /* Ensure images are properly contained */
+        .uk-card img {
+            max-height: 100px;
+            width: auto;
+            margin: 0 auto;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+ <!-- Lightbox Template -->
+    <template id="js-lightbox-template">
+        <div class="uk-lightbox uk-overflow-hidden">
+            <div class="uk-lightbox-items"></div>
+            <div class="uk-position-top-right uk-position-small uk-transition-fade" uk-inverse>
+                <button class="uk-lightbox-close uk-close-large" type="button" uk-close></button>
+            </div>
+            <div class="uk-position-bottom uk-position-medium uk-text-center uk-transition-fade" uk-inverse>
+                <div class="uk-grid-small uk-width-auto uk-flex-inline uk-flex-middle" uk-grid>
+                    <div><a class="uk-lightbox-slidenav" href uk-slidenav-previous uk-lightbox-item="previous"></a></div>
+                    <div><div class="uk-lightbox-counter"></div></div>
+                    <div><a class="uk-lightbox-slidenav" href uk-slidenav-next uk-lightbox-item="next"></a></div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Main container -->
+    <div class="uk-section uk-section-default" uk-height-viewport="expand: true" data-theme="light">
+        <div class="uk-container uk-container-large uk-padding">
+            <!-- Header card -->
+            <div class="uk-card uk-card-default uk-card-body uk-margin-medium-bottom">
+                <div class="uk-flex uk-flex-between uk-flex-middle">
+                    <div>
+                        <h1 class="uk-h3 uk-margin-remove">Image Comparison</h1>
+                        <div class="uk-text-meta">
+                            Generated on 2025-09-04 18:49:17
+                        </div>
+                    </div>
+                    <!-- Theme toggle button will be moved to fixed position -->
+                    <input type="hidden" id="themeState" value="light">
+                </div>
+
+                <div class="uk-margin-top">
+                    <div>
+                        <div>
+                            <a class="uk-inline lightbox-item" href="https://wsrv.nl/lichtenstein.jpg" data-caption="<strong>Source Image</strong>">
+                                <img src="https://wsrv.nl/lichtenstein.jpg" alt="Source Image" class="uk-border-rounded" style="max-height: 150px; width: auto;">
+                            </a>
+                        </div>
+                        <div class="uk-margin-small-top">
+                            <a href="https://wsrv.nl/lichtenstein.jpg" class="uk-link-muted" target="_blank" rel="noopener" uk-icon="icon: link">
+                                <span class="uk-text-small">Original Image</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transformations -->
+            <div class="uk-card uk-card-default uk-card-body uk-margin-bottom">
+                <h2 class="uk-card-title">Simple Resize</h2>
+                <p class="uk-text-meta">Basic image resizing to 400x300 pixels</p>
+
+                <div class="uk-margin">
+                    <pre><code class="language-python">image.resize(800, 800)</code></pre>
+                </div>
+
+                <div class="uk-child-width-1-1 uk-child-width-1-2@s uk-child-width-1-3@m uk-grid-match" uk-grid>
+                        <div>
+                            <div class="uk-card uk-card-default uk-card-body">
+                                <h5 class="uk-card-title">Imagor</h5>
+
+                                <!-- Toggle between Image and Metadata -->
+                                <div class="uk-margin-remove">
+                                    <div class="uk-height-small uk-position-relative" style="min-height: 180px;">
+                                        <!-- Toggle Button with background -->
+                                        <button class="uk-button uk-button-default uk-button-small"
+                                                onclick="toggleView(this)"
+                                                type="button"
+                                                uk-tooltip="View metadata"
+                                                data-showing="image"
+                                                style="position: absolute; top: 10px; right: 10px; z-index: 10; background-color: rgba(255, 255, 255, 0.9); border-radius: 50%; width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; border: 1px solid var(--card-border, #e5e5e5);">
+                                            <span uk-icon="icon: code; ratio: 0.7"></span>
+                                        </button>
+
+                                        <!-- Image View -->
+                                        <div class="view-container" data-view="image">
+                                            <div class="uk-height-small" style="display: flex; justify-content: center; align-items: center; padding: 5px; background: var(--card-bg, #fff); border: 1px solid var(--card-border, #e5e5e5); border-radius: 4px; height: 180px;">
+                                                <div uk-lightbox style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;">
+                                                    <a class="uk-inline" href="http://localhost:8018/uSK6_gdS9l7XfZO1n4L63ddnKr3zGxhdegpADXh4Slo=/fit-in/800x800/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" data-caption="<strong>Imagor</strong> - Simple Resize">
+                                                        <img src="http://localhost:8018/uSK6_gdS9l7XfZO1n4L63ddnKr3zGxhdegpADXh4Slo=/fit-in/800x800/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" alt="Imagor result" style="max-height: 160px; max-width: 100%; object-fit: contain;">
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Metadata View -->
+                                        <div class="view-container" data-view="metadata" hidden>
+                                            <div class="uk-height-small">
+                                                    <pre class="uk-margin-remove"><code class="language-json" style="font-size: 0.8rem; line-height: 1.2; white-space: pre-wrap;">{
+  &#34;error&#34;: &#34;Failed to get metadata: HTTPConnectionPool(host=&#39;localhost&#39;, port=8018): Max retries exceeded with url: /aHG0tbtdEE_Pds711RICbyR1oK7QgQmTrrxJP9V1nHQ=/meta/fit-in/800x800/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg (Caused by NewConnectionError(&#39;&lt;urllib3.connection.HTTPConnection object at 0x7518965ef0e0&gt;: Failed to establish a new connection: [Errno 111] Connection refused&#39;))&#34;
+}</code></pre>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <script>
+                                function toggleView(button) {
+                                    const container = button.closest('.uk-position-relative');
+                                    const currentView = button.getAttribute('data-showing');
+                                    const newView = currentView === 'image' ? 'metadata' : 'image';
+
+                                    // Toggle visibility
+                                    container.querySelector(`[data-view="${currentView}"]`).hidden = true;
+                                    container.querySelector(`[data-view="${newView}"]`).hidden = false;
+
+                                    // Update button
+                                    button.setAttribute('data-showing', newView);
+                                    button.setAttribute('uk-tooltip', `View ${currentView}`);
+
+                                    // Update icon based on the new view
+                                    const icon = button.querySelector('span');
+                                    if (newView === 'metadata') {
+                                        icon.setAttribute('uk-icon', 'icon: image');
+                                        button.style.backgroundColor = 'rgba(0, 0, 0, 0.1)';
+                                    } else {
+                                        icon.setAttribute('uk-icon', 'icon: code');
+                                        button.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+                                    }
+
+                                    UIkit.update();
+                                }
+                                </script>
+
+                                <!-- URL with Embedded Action Buttons -->
+                                <div class="uk-margin">
+                                    <div class="uk-inline uk-width-1-1">
+                                        <a class="uk-form-icon" href="http://localhost:8018/uSK6_gdS9l7XfZO1n4L63ddnKr3zGxhdegpADXh4Slo=/fit-in/800x800/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" target="_blank" uk-icon="icon: forward" uk-tooltip="Open in new tab"></a>
+                                        <input class="uk-input uk-form-small" type="text" value="http://localhost:8018/uSK6_gdS9l7XfZO1n4L63ddnKr3zGxhdegpADXh4Slo=/fit-in/800x800/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" readonly style="padding-left: 40px; padding-right: 40px;">
+                                        <a class="uk-form-icon uk-form-icon-flip" href="#" uk-icon="icon: copy" onclick="copyToClipboard(this.previousElementSibling); return false;" uk-tooltip="Copy URL"></a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="uk-card uk-card-default uk-card-body">
+                                <h5 class="uk-card-title">Thumbor</h5>
+
+                                <!-- Toggle between Image and Metadata -->
+                                <div class="uk-margin-remove">
+                                    <div class="uk-height-small uk-position-relative" style="min-height: 180px;">
+                                        <!-- Toggle Button with background -->
+                                        <button class="uk-button uk-button-default uk-button-small"
+                                                onclick="toggleView(this)"
+                                                type="button"
+                                                uk-tooltip="View metadata"
+                                                data-showing="image"
+                                                style="position: absolute; top: 10px; right: 10px; z-index: 10; background-color: rgba(255, 255, 255, 0.9); border-radius: 50%; width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; border: 1px solid var(--card-border, #e5e5e5);">
+                                            <span uk-icon="icon: code; ratio: 0.7"></span>
+                                        </button>
+
+                                        <!-- Image View -->
+                                        <div class="view-container" data-view="image">
+                                            <div class="uk-height-small" style="display: flex; justify-content: center; align-items: center; padding: 5px; background: var(--card-bg, #fff); border: 1px solid var(--card-border, #e5e5e5); border-radius: 4px; height: 180px;">
+                                                <div uk-lightbox style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;">
+                                                    <a class="uk-inline" href="http://localhost:8019/2wQcUkl7IBAda9iRpTw-Qheo5F4=/fit-in/800x800/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" data-caption="<strong>Thumbor</strong> - Simple Resize">
+                                                        <img src="http://localhost:8019/2wQcUkl7IBAda9iRpTw-Qheo5F4=/fit-in/800x800/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" alt="Thumbor result" style="max-height: 160px; max-width: 100%; object-fit: contain;">
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Metadata View -->
+                                        <div class="view-container" data-view="metadata" hidden>
+                                            <div class="uk-height-small">
+                                                    <pre class="uk-margin-remove"><code class="language-json" style="font-size: 0.8rem; line-height: 1.2; white-space: pre-wrap;">{
+  &#34;error&#34;: &#34;Failed to get metadata: HTTPConnectionPool(host=&#39;localhost&#39;, port=8019): Max retries exceeded with url: /TskQrIpgr7lTxtqswB9SrsijhsI=/meta/fit-in/800x800/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg (Caused by NewConnectionError(&#39;&lt;urllib3.connection.HTTPConnection object at 0x75189661c290&gt;: Failed to establish a new connection: [Errno 111] Connection refused&#39;))&#34;
+}</code></pre>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <script>
+                                function toggleView(button) {
+                                    const container = button.closest('.uk-position-relative');
+                                    const currentView = button.getAttribute('data-showing');
+                                    const newView = currentView === 'image' ? 'metadata' : 'image';
+
+                                    // Toggle visibility
+                                    container.querySelector(`[data-view="${currentView}"]`).hidden = true;
+                                    container.querySelector(`[data-view="${newView}"]`).hidden = false;
+
+                                    // Update button
+                                    button.setAttribute('data-showing', newView);
+                                    button.setAttribute('uk-tooltip', `View ${currentView}`);
+
+                                    // Update icon based on the new view
+                                    const icon = button.querySelector('span');
+                                    if (newView === 'metadata') {
+                                        icon.setAttribute('uk-icon', 'icon: image');
+                                        button.style.backgroundColor = 'rgba(0, 0, 0, 0.1)';
+                                    } else {
+                                        icon.setAttribute('uk-icon', 'icon: code');
+                                        button.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+                                    }
+
+                                    UIkit.update();
+                                }
+                                </script>
+
+                                <!-- URL with Embedded Action Buttons -->
+                                <div class="uk-margin">
+                                    <div class="uk-inline uk-width-1-1">
+                                        <a class="uk-form-icon" href="http://localhost:8019/2wQcUkl7IBAda9iRpTw-Qheo5F4=/fit-in/800x800/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" target="_blank" uk-icon="icon: forward" uk-tooltip="Open in new tab"></a>
+                                        <input class="uk-input uk-form-small" type="text" value="http://localhost:8019/2wQcUkl7IBAda9iRpTw-Qheo5F4=/fit-in/800x800/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" readonly style="padding-left: 40px; padding-right: 40px;">
+                                        <a class="uk-form-icon uk-form-icon-flip" href="#" uk-icon="icon: copy" onclick="copyToClipboard(this.previousElementSibling); return false;" uk-tooltip="Copy URL"></a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="uk-card uk-card-default uk-card-body">
+                                <h5 class="uk-card-title">WsrvNl</h5>
+
+                                <!-- Toggle between Image and Metadata -->
+                                <div class="uk-margin-remove">
+                                    <div class="uk-height-small uk-position-relative" style="min-height: 180px;">
+                                        <!-- Toggle Button with background -->
+                                        <button class="uk-button uk-button-default uk-button-small"
+                                                onclick="toggleView(this)"
+                                                type="button"
+                                                uk-tooltip="View metadata"
+                                                data-showing="image"
+                                                style="position: absolute; top: 10px; right: 10px; z-index: 10; background-color: rgba(255, 255, 255, 0.9); border-radius: 50%; width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; border: 1px solid var(--card-border, #e5e5e5);">
+                                            <span uk-icon="icon: code; ratio: 0.7"></span>
+                                        </button>
+
+                                        <!-- Image View -->
+                                        <div class="view-container" data-view="image">
+                                            <div class="uk-height-small" style="display: flex; justify-content: center; align-items: center; padding: 5px; background: var(--card-bg, #fff); border: 1px solid var(--card-border, #e5e5e5); border-radius: 4px; height: 180px;">
+                                                <div uk-lightbox style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;">
+                                                    <a class="uk-inline" href="https://wsrv.nl/?url=https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg&amp;w&amp;h" data-caption="<strong>WsrvNl</strong> - Simple Resize">
+                                                        <img src="https://wsrv.nl/?url=https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg&amp;w&amp;h" alt="WsrvNl result" style="max-height: 160px; max-width: 100%; object-fit: contain;">
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Metadata View -->
+                                        <div class="view-container" data-view="metadata" hidden>
+                                            <div class="uk-height-small">
+                                                    <pre class="uk-margin-remove"><code class="language-json" style="font-size: 0.8rem; line-height: 1.2; white-space: pre-wrap;">{
+  &#34;error&#34;: &#34;Failed to get metadata: Expecting value: line 1 column 1 (char 0)&#34;
+}</code></pre>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <script>
+                                function toggleView(button) {
+                                    const container = button.closest('.uk-position-relative');
+                                    const currentView = button.getAttribute('data-showing');
+                                    const newView = currentView === 'image' ? 'metadata' : 'image';
+
+                                    // Toggle visibility
+                                    container.querySelector(`[data-view="${currentView}"]`).hidden = true;
+                                    container.querySelector(`[data-view="${newView}"]`).hidden = false;
+
+                                    // Update button
+                                    button.setAttribute('data-showing', newView);
+                                    button.setAttribute('uk-tooltip', `View ${currentView}`);
+
+                                    // Update icon based on the new view
+                                    const icon = button.querySelector('span');
+                                    if (newView === 'metadata') {
+                                        icon.setAttribute('uk-icon', 'icon: image');
+                                        button.style.backgroundColor = 'rgba(0, 0, 0, 0.1)';
+                                    } else {
+                                        icon.setAttribute('uk-icon', 'icon: code');
+                                        button.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+                                    }
+
+                                    UIkit.update();
+                                }
+                                </script>
+
+                                <!-- URL with Embedded Action Buttons -->
+                                <div class="uk-margin">
+                                    <div class="uk-inline uk-width-1-1">
+                                        <a class="uk-form-icon" href="https://wsrv.nl/?url=https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg&amp;w&amp;h" target="_blank" uk-icon="icon: forward" uk-tooltip="Open in new tab"></a>
+                                        <input class="uk-input uk-form-small" type="text" value="https://wsrv.nl/?url=https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg&amp;w&amp;h" readonly style="padding-left: 40px; padding-right: 40px;">
+                                        <a class="uk-form-icon uk-form-icon-flip" href="#" uk-icon="icon: copy" onclick="copyToClipboard(this.previousElementSibling); return false;" uk-tooltip="Copy URL"></a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                </div>
+            </div>
+            <div class="uk-card uk-card-default uk-card-body uk-margin-bottom">
+                <h2 class="uk-card-title">Grayscale</h2>
+                <p class="uk-text-meta">Convert image to grayscale</p>
+
+                <div class="uk-margin">
+                    <pre><code class="language-python">image.grayscale()</code></pre>
+                </div>
+
+                <div class="uk-child-width-1-1 uk-child-width-1-2@s uk-child-width-1-3@m uk-grid-match" uk-grid>
+                        <div>
+                            <div class="uk-card uk-card-default uk-card-body">
+                                <h5 class="uk-card-title">Imagor</h5>
+
+                                <!-- Toggle between Image and Metadata -->
+                                <div class="uk-margin-remove">
+                                    <div class="uk-height-small uk-position-relative" style="min-height: 180px;">
+                                        <!-- Toggle Button with background -->
+                                        <button class="uk-button uk-button-default uk-button-small"
+                                                onclick="toggleView(this)"
+                                                type="button"
+                                                uk-tooltip="View metadata"
+                                                data-showing="image"
+                                                style="position: absolute; top: 10px; right: 10px; z-index: 10; background-color: rgba(255, 255, 255, 0.9); border-radius: 50%; width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; border: 1px solid var(--card-border, #e5e5e5);">
+                                            <span uk-icon="icon: code; ratio: 0.7"></span>
+                                        </button>
+
+                                        <!-- Image View -->
+                                        <div class="view-container" data-view="image">
+                                            <div class="uk-height-small" style="display: flex; justify-content: center; align-items: center; padding: 5px; background: var(--card-bg, #fff); border: 1px solid var(--card-border, #e5e5e5); border-radius: 4px; height: 180px;">
+                                                <div uk-lightbox style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;">
+                                                    <a class="uk-inline" href="http://localhost:8018/PnLE0qgn7dgvGLlcBqvcmxlXOyHtS4d7NfdyT8oNkQ0=/filters:grayscale()/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" data-caption="<strong>Imagor</strong> - Grayscale">
+                                                        <img src="http://localhost:8018/PnLE0qgn7dgvGLlcBqvcmxlXOyHtS4d7NfdyT8oNkQ0=/filters:grayscale()/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" alt="Imagor result" style="max-height: 160px; max-width: 100%; object-fit: contain;">
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Metadata View -->
+                                        <div class="view-container" data-view="metadata" hidden>
+                                            <div class="uk-height-small">
+                                                    <pre class="uk-margin-remove"><code class="language-json" style="font-size: 0.8rem; line-height: 1.2; white-space: pre-wrap;">{
+  &#34;error&#34;: &#34;Failed to get metadata: HTTPConnectionPool(host=&#39;localhost&#39;, port=8018): Max retries exceeded with url: /o8okw3cmjq5o53DxIE2qFDiZx3v6El7657EcWlBMEwc=/meta/filters:grayscale()/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg (Caused by NewConnectionError(&#39;&lt;urllib3.connection.HTTPConnection object at 0x7518965ef8c0&gt;: Failed to establish a new connection: [Errno 111] Connection refused&#39;))&#34;
+}</code></pre>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <script>
+                                function toggleView(button) {
+                                    const container = button.closest('.uk-position-relative');
+                                    const currentView = button.getAttribute('data-showing');
+                                    const newView = currentView === 'image' ? 'metadata' : 'image';
+
+                                    // Toggle visibility
+                                    container.querySelector(`[data-view="${currentView}"]`).hidden = true;
+                                    container.querySelector(`[data-view="${newView}"]`).hidden = false;
+
+                                    // Update button
+                                    button.setAttribute('data-showing', newView);
+                                    button.setAttribute('uk-tooltip', `View ${currentView}`);
+
+                                    // Update icon based on the new view
+                                    const icon = button.querySelector('span');
+                                    if (newView === 'metadata') {
+                                        icon.setAttribute('uk-icon', 'icon: image');
+                                        button.style.backgroundColor = 'rgba(0, 0, 0, 0.1)';
+                                    } else {
+                                        icon.setAttribute('uk-icon', 'icon: code');
+                                        button.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+                                    }
+
+                                    UIkit.update();
+                                }
+                                </script>
+
+                                <!-- URL with Embedded Action Buttons -->
+                                <div class="uk-margin">
+                                    <div class="uk-inline uk-width-1-1">
+                                        <a class="uk-form-icon" href="http://localhost:8018/PnLE0qgn7dgvGLlcBqvcmxlXOyHtS4d7NfdyT8oNkQ0=/filters:grayscale()/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" target="_blank" uk-icon="icon: forward" uk-tooltip="Open in new tab"></a>
+                                        <input class="uk-input uk-form-small" type="text" value="http://localhost:8018/PnLE0qgn7dgvGLlcBqvcmxlXOyHtS4d7NfdyT8oNkQ0=/filters:grayscale()/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" readonly style="padding-left: 40px; padding-right: 40px;">
+                                        <a class="uk-form-icon uk-form-icon-flip" href="#" uk-icon="icon: copy" onclick="copyToClipboard(this.previousElementSibling); return false;" uk-tooltip="Copy URL"></a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="uk-card uk-card-default uk-card-body">
+                                <h5 class="uk-card-title">Thumbor</h5>
+
+                                <!-- Toggle between Image and Metadata -->
+                                <div class="uk-margin-remove">
+                                    <div class="uk-height-small uk-position-relative" style="min-height: 180px;">
+                                        <!-- Toggle Button with background -->
+                                        <button class="uk-button uk-button-default uk-button-small"
+                                                onclick="toggleView(this)"
+                                                type="button"
+                                                uk-tooltip="View metadata"
+                                                data-showing="image"
+                                                style="position: absolute; top: 10px; right: 10px; z-index: 10; background-color: rgba(255, 255, 255, 0.9); border-radius: 50%; width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; border: 1px solid var(--card-border, #e5e5e5);">
+                                            <span uk-icon="icon: code; ratio: 0.7"></span>
+                                        </button>
+
+                                        <!-- Image View -->
+                                        <div class="view-container" data-view="image">
+                                            <div class="uk-height-small" style="display: flex; justify-content: center; align-items: center; padding: 5px; background: var(--card-bg, #fff); border: 1px solid var(--card-border, #e5e5e5); border-radius: 4px; height: 180px;">
+                                                <div uk-lightbox style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;">
+                                                    <a class="uk-inline" href="http://localhost:8019/SUvtlc3ca8K8pYuiCkvpH67mF6E=/filters:grayscale()/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" data-caption="<strong>Thumbor</strong> - Grayscale">
+                                                        <img src="http://localhost:8019/SUvtlc3ca8K8pYuiCkvpH67mF6E=/filters:grayscale()/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" alt="Thumbor result" style="max-height: 160px; max-width: 100%; object-fit: contain;">
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Metadata View -->
+                                        <div class="view-container" data-view="metadata" hidden>
+                                            <div class="uk-height-small">
+                                                    <pre class="uk-margin-remove"><code class="language-json" style="font-size: 0.8rem; line-height: 1.2; white-space: pre-wrap;">{
+  &#34;error&#34;: &#34;Failed to get metadata: HTTPConnectionPool(host=&#39;localhost&#39;, port=8019): Max retries exceeded with url: /i9440aYsf5Qd2hv_QLlBBUz3Tv4=/meta/filters:grayscale()/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg (Caused by NewConnectionError(&#39;&lt;urllib3.connection.HTTPConnection object at 0x75189661cb00&gt;: Failed to establish a new connection: [Errno 111] Connection refused&#39;))&#34;
+}</code></pre>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <script>
+                                function toggleView(button) {
+                                    const container = button.closest('.uk-position-relative');
+                                    const currentView = button.getAttribute('data-showing');
+                                    const newView = currentView === 'image' ? 'metadata' : 'image';
+
+                                    // Toggle visibility
+                                    container.querySelector(`[data-view="${currentView}"]`).hidden = true;
+                                    container.querySelector(`[data-view="${newView}"]`).hidden = false;
+
+                                    // Update button
+                                    button.setAttribute('data-showing', newView);
+                                    button.setAttribute('uk-tooltip', `View ${currentView}`);
+
+                                    // Update icon based on the new view
+                                    const icon = button.querySelector('span');
+                                    if (newView === 'metadata') {
+                                        icon.setAttribute('uk-icon', 'icon: image');
+                                        button.style.backgroundColor = 'rgba(0, 0, 0, 0.1)';
+                                    } else {
+                                        icon.setAttribute('uk-icon', 'icon: code');
+                                        button.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+                                    }
+
+                                    UIkit.update();
+                                }
+                                </script>
+
+                                <!-- URL with Embedded Action Buttons -->
+                                <div class="uk-margin">
+                                    <div class="uk-inline uk-width-1-1">
+                                        <a class="uk-form-icon" href="http://localhost:8019/SUvtlc3ca8K8pYuiCkvpH67mF6E=/filters:grayscale()/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" target="_blank" uk-icon="icon: forward" uk-tooltip="Open in new tab"></a>
+                                        <input class="uk-input uk-form-small" type="text" value="http://localhost:8019/SUvtlc3ca8K8pYuiCkvpH67mF6E=/filters:grayscale()/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" readonly style="padding-left: 40px; padding-right: 40px;">
+                                        <a class="uk-form-icon uk-form-icon-flip" href="#" uk-icon="icon: copy" onclick="copyToClipboard(this.previousElementSibling); return false;" uk-tooltip="Copy URL"></a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="uk-card uk-card-danger uk-card-body">
+                                <h3 class="uk-card-title">WsrvNl</h3>
+                                <p class="uk-text-danger">Error: &#39;WsrvNl&#39; object has no attribute &#39;grayscale&#39;</p>
+                                <details class="uk-margin-top">
+                                    <summary>Show traceback</summary>
+                                    <pre class="uk-margin-remove"><code class="language-python">Traceback (most recent call last):
+  File &#34;/home/tbu/git/burgdev/pymagor/examples/compare_backends_advanced.py&#34;, line 174, in _run_transform
+    method = getattr(current, step.method_name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: &#39;WsrvNl&#39; object has no attribute &#39;grayscale&#39;
+</code></pre>
+                                </details>
+                            </div>
+                        </div>
+                </div>
+            </div>
+            <div class="uk-card uk-card-default uk-card-body uk-margin-bottom">
+                <h2 class="uk-card-title">Combined Transformations</h2>
+                <p class="uk-text-meta">Resize, convert to grayscale, and set quality</p>
+
+                <div class="uk-margin">
+                    <pre><code class="language-python">image.resize(4000, 3000).grayscale().quality(85)</code></pre>
+                </div>
+
+                <div class="uk-child-width-1-1 uk-child-width-1-2@s uk-child-width-1-3@m uk-grid-match" uk-grid>
+                        <div>
+                            <div class="uk-card uk-card-default uk-card-body">
+                                <h5 class="uk-card-title">Imagor</h5>
+
+                                <!-- Toggle between Image and Metadata -->
+                                <div class="uk-margin-remove">
+                                    <div class="uk-height-small uk-position-relative" style="min-height: 180px;">
+                                        <!-- Toggle Button with background -->
+                                        <button class="uk-button uk-button-default uk-button-small"
+                                                onclick="toggleView(this)"
+                                                type="button"
+                                                uk-tooltip="View metadata"
+                                                data-showing="image"
+                                                style="position: absolute; top: 10px; right: 10px; z-index: 10; background-color: rgba(255, 255, 255, 0.9); border-radius: 50%; width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; border: 1px solid var(--card-border, #e5e5e5);">
+                                            <span uk-icon="icon: code; ratio: 0.7"></span>
+                                        </button>
+
+                                        <!-- Image View -->
+                                        <div class="view-container" data-view="image">
+                                            <div class="uk-height-small" style="display: flex; justify-content: center; align-items: center; padding: 5px; background: var(--card-bg, #fff); border: 1px solid var(--card-border, #e5e5e5); border-radius: 4px; height: 180px;">
+                                                <div uk-lightbox style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;">
+                                                    <a class="uk-inline" href="http://localhost:8018/sGUL6puNZ7vWtM6Lyxs-irTPrlmXtPAw0o9iKejx_SU=/fit-in/4000x3000/filters:grayscale():quality()/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" data-caption="<strong>Imagor</strong> - Combined Transformations">
+                                                        <img src="http://localhost:8018/sGUL6puNZ7vWtM6Lyxs-irTPrlmXtPAw0o9iKejx_SU=/fit-in/4000x3000/filters:grayscale():quality()/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" alt="Imagor result" style="max-height: 160px; max-width: 100%; object-fit: contain;">
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Metadata View -->
+                                        <div class="view-container" data-view="metadata" hidden>
+                                            <div class="uk-height-small">
+                                                    <pre class="uk-margin-remove"><code class="language-json" style="font-size: 0.8rem; line-height: 1.2; white-space: pre-wrap;">{
+  &#34;error&#34;: &#34;Failed to get metadata: HTTPConnectionPool(host=&#39;localhost&#39;, port=8018): Max retries exceeded with url: /toLDm-usotvumW7MZDZksvKYt0mOyZ9zOV3xIP56nwE=/meta/fit-in/4000x3000/filters:grayscale():quality()/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg (Caused by NewConnectionError(&#39;&lt;urllib3.connection.HTTPConnection object at 0x7518965ef9b0&gt;: Failed to establish a new connection: [Errno 111] Connection refused&#39;))&#34;
+}</code></pre>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <script>
+                                function toggleView(button) {
+                                    const container = button.closest('.uk-position-relative');
+                                    const currentView = button.getAttribute('data-showing');
+                                    const newView = currentView === 'image' ? 'metadata' : 'image';
+
+                                    // Toggle visibility
+                                    container.querySelector(`[data-view="${currentView}"]`).hidden = true;
+                                    container.querySelector(`[data-view="${newView}"]`).hidden = false;
+
+                                    // Update button
+                                    button.setAttribute('data-showing', newView);
+                                    button.setAttribute('uk-tooltip', `View ${currentView}`);
+
+                                    // Update icon based on the new view
+                                    const icon = button.querySelector('span');
+                                    if (newView === 'metadata') {
+                                        icon.setAttribute('uk-icon', 'icon: image');
+                                        button.style.backgroundColor = 'rgba(0, 0, 0, 0.1)';
+                                    } else {
+                                        icon.setAttribute('uk-icon', 'icon: code');
+                                        button.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+                                    }
+
+                                    UIkit.update();
+                                }
+                                </script>
+
+                                <!-- URL with Embedded Action Buttons -->
+                                <div class="uk-margin">
+                                    <div class="uk-inline uk-width-1-1">
+                                        <a class="uk-form-icon" href="http://localhost:8018/sGUL6puNZ7vWtM6Lyxs-irTPrlmXtPAw0o9iKejx_SU=/fit-in/4000x3000/filters:grayscale():quality()/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" target="_blank" uk-icon="icon: forward" uk-tooltip="Open in new tab"></a>
+                                        <input class="uk-input uk-form-small" type="text" value="http://localhost:8018/sGUL6puNZ7vWtM6Lyxs-irTPrlmXtPAw0o9iKejx_SU=/fit-in/4000x3000/filters:grayscale():quality()/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" readonly style="padding-left: 40px; padding-right: 40px;">
+                                        <a class="uk-form-icon uk-form-icon-flip" href="#" uk-icon="icon: copy" onclick="copyToClipboard(this.previousElementSibling); return false;" uk-tooltip="Copy URL"></a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="uk-card uk-card-default uk-card-body">
+                                <h5 class="uk-card-title">Thumbor</h5>
+
+                                <!-- Toggle between Image and Metadata -->
+                                <div class="uk-margin-remove">
+                                    <div class="uk-height-small uk-position-relative" style="min-height: 180px;">
+                                        <!-- Toggle Button with background -->
+                                        <button class="uk-button uk-button-default uk-button-small"
+                                                onclick="toggleView(this)"
+                                                type="button"
+                                                uk-tooltip="View metadata"
+                                                data-showing="image"
+                                                style="position: absolute; top: 10px; right: 10px; z-index: 10; background-color: rgba(255, 255, 255, 0.9); border-radius: 50%; width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; border: 1px solid var(--card-border, #e5e5e5);">
+                                            <span uk-icon="icon: code; ratio: 0.7"></span>
+                                        </button>
+
+                                        <!-- Image View -->
+                                        <div class="view-container" data-view="image">
+                                            <div class="uk-height-small" style="display: flex; justify-content: center; align-items: center; padding: 5px; background: var(--card-bg, #fff); border: 1px solid var(--card-border, #e5e5e5); border-radius: 4px; height: 180px;">
+                                                <div uk-lightbox style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;">
+                                                    <a class="uk-inline" href="http://localhost:8019/Vo2ieLSWQotD3_AwxH4189O5SLE=/fit-in/4000x3000/filters:grayscale():quality()/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" data-caption="<strong>Thumbor</strong> - Combined Transformations">
+                                                        <img src="http://localhost:8019/Vo2ieLSWQotD3_AwxH4189O5SLE=/fit-in/4000x3000/filters:grayscale():quality()/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" alt="Thumbor result" style="max-height: 160px; max-width: 100%; object-fit: contain;">
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Metadata View -->
+                                        <div class="view-container" data-view="metadata" hidden>
+                                            <div class="uk-height-small">
+                                                    <pre class="uk-margin-remove"><code class="language-json" style="font-size: 0.8rem; line-height: 1.2; white-space: pre-wrap;">{
+  &#34;error&#34;: &#34;Failed to get metadata: HTTPConnectionPool(host=&#39;localhost&#39;, port=8019): Max retries exceeded with url: /yK2aOOQvPPflwFI1ugYsQXopyyE=/meta/fit-in/4000x3000/filters:grayscale():quality()/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg (Caused by NewConnectionError(&#39;&lt;urllib3.connection.HTTPConnection object at 0x75189661d400&gt;: Failed to establish a new connection: [Errno 111] Connection refused&#39;))&#34;
+}</code></pre>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <script>
+                                function toggleView(button) {
+                                    const container = button.closest('.uk-position-relative');
+                                    const currentView = button.getAttribute('data-showing');
+                                    const newView = currentView === 'image' ? 'metadata' : 'image';
+
+                                    // Toggle visibility
+                                    container.querySelector(`[data-view="${currentView}"]`).hidden = true;
+                                    container.querySelector(`[data-view="${newView}"]`).hidden = false;
+
+                                    // Update button
+                                    button.setAttribute('data-showing', newView);
+                                    button.setAttribute('uk-tooltip', `View ${currentView}`);
+
+                                    // Update icon based on the new view
+                                    const icon = button.querySelector('span');
+                                    if (newView === 'metadata') {
+                                        icon.setAttribute('uk-icon', 'icon: image');
+                                        button.style.backgroundColor = 'rgba(0, 0, 0, 0.1)';
+                                    } else {
+                                        icon.setAttribute('uk-icon', 'icon: code');
+                                        button.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+                                    }
+
+                                    UIkit.update();
+                                }
+                                </script>
+
+                                <!-- URL with Embedded Action Buttons -->
+                                <div class="uk-margin">
+                                    <div class="uk-inline uk-width-1-1">
+                                        <a class="uk-form-icon" href="http://localhost:8019/Vo2ieLSWQotD3_AwxH4189O5SLE=/fit-in/4000x3000/filters:grayscale():quality()/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" target="_blank" uk-icon="icon: forward" uk-tooltip="Open in new tab"></a>
+                                        <input class="uk-input uk-form-small" type="text" value="http://localhost:8019/Vo2ieLSWQotD3_AwxH4189O5SLE=/fit-in/4000x3000/filters:grayscale():quality()/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" readonly style="padding-left: 40px; padding-right: 40px;">
+                                        <a class="uk-form-icon uk-form-icon-flip" href="#" uk-icon="icon: copy" onclick="copyToClipboard(this.previousElementSibling); return false;" uk-tooltip="Copy URL"></a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="uk-card uk-card-danger uk-card-body">
+                                <h3 class="uk-card-title">WsrvNl</h3>
+                                <p class="uk-text-danger">Error: &#39;WsrvNl&#39; object has no attribute &#39;grayscale&#39;</p>
+                                <details class="uk-margin-top">
+                                    <summary>Show traceback</summary>
+                                    <pre class="uk-margin-remove"><code class="language-python">Traceback (most recent call last):
+  File &#34;/home/tbu/git/burgdev/pymagor/examples/compare_backends_advanced.py&#34;, line 174, in _run_transform
+    method = getattr(current, step.method_name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: &#39;WsrvNl&#39; object has no attribute &#39;grayscale&#39;
+</code></pre>
+                                </details>
+                            </div>
+                        </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Theme toggle functionality
+        function toggleTheme() {
+            const container = document.querySelector('.uk-section');
+            const currentTheme = container.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+            // Update theme attribute
+            container.setAttribute('data-theme', newTheme);
+
+            // Update UI elements
+            if (newTheme === 'dark') {
+                document.getElementById('themeIcon').setAttribute('uk-icon', 'icon: sun');
+                document.getElementById('prism-theme-dark').media = 'all';
+                document.getElementById('prism-theme-light').media = 'not all';
+            } else {
+                document.getElementById('themeIcon').setAttribute('uk-icon', 'icon: paint-bucket');
+                document.getElementById('prism-theme-light').media = 'all';
+                document.getElementById('prism-theme-dark').media = 'not all';
+            }
+
+            // Save preference
+            localStorage.setItem('theme', newTheme);
+            document.getElementById('themeState').value = newTheme;
+
+            // Force UIkit to update components
+            if (typeof UIkit !== 'undefined') {
+                UIkit.update(null, 'update');
+            }
+
+            // Update Prism if available
+            if (window.Prism) {
+                Prism.highlightAll();
+            }
+        }
+
+        // Copy to clipboard function
+        function copyToClipboard(element) {
+            element.select();
+            document.execCommand('copy');
+
+            // Show notification
+            const notification = UIkit.notification({
+                message: 'URL copied to clipboard!',
+                status: 'success',
+                pos: 'bottom-center',
+                timeout: 2000
+            });
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set initial theme
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            const container = document.querySelector('.uk-section');
+            container.setAttribute('data-theme', savedTheme);
+
+            // Update UI elements
+            if (savedTheme === 'dark') {
+                document.getElementById('themeIcon').setAttribute('uk-icon', 'icon: sun');
+                document.getElementById('prism-theme-dark').media = 'all';
+                document.getElementById('prism-theme-light').media = 'not all';
+            }
+            const html = document.documentElement;
+
+            if (savedTheme === 'dark') {
+                html.classList.remove('uk-light');
+                html.classList.add('uk-dark');
+                document.getElementById('themeIcon').setAttribute('uk-icon', 'icon: sun');
+                document.getElementById('prism-theme-dark').media = 'all';
+                document.getElementById('prism-theme-light').media = 'not all';
+            } else {
+                html.classList.remove('uk-dark');
+                html.classList.add('uk-light');
+                document.getElementById('themeIcon').setAttribute('uk-icon', 'icon: paint-bucket');
+                document.getElementById('prism-theme-light').media = 'all';
+                document.getElementById('prism-theme-dark').media = 'not all';
+            }
+
+            // Initialize UIkit components
+            if (typeof UIkit !== 'undefined') {
+                UIkit.update();
+            }
+
+            // Initialize Prism syntax highlighting
+            if (window.Prism) {
+                Prism.highlightAll();
+            }
+        });
+    </script>
+    <!-- Fixed theme toggle button -->
+    <div class="uk-position-fixed uk-position-bottom-right uk-margin-large uk-margin-right" style="z-index: 1000;">
+        <button class="uk-button uk-button-default uk-border-circle" onclick="toggleTheme()" title="Toggle dark/light mode" style="width: 50px; height: 50px; padding: 0; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <span id="themeIcon" uk-icon="icon: paint-bucket; ratio: 1.2"></span>
+        </button>
+    </div>
+</body>
+</html>

@@ -305,10 +305,26 @@ class ImageComparator:
         # Convert results to list for template
         transformations_list = list(results.values())
 
+        # Get source image dimensions if available
+        source_size = None
+        try:
+            # Try to get image dimensions using Pillow
+            from PIL import Image
+            import requests
+            from io import BytesIO
+
+            response = requests.get(self.source_url)
+            img = Image.open(BytesIO(response.content))
+            source_size = img.size  # Returns (width, height)
+        except Exception:
+            # If we can't get dimensions, just use None
+            pass
+
         # Render the template
-        template = self.env.get_template("comparison.html")
+        template = self.env.get_template("comparison_new.html")
         output = template.render(
             source_url=self.source_url,
+            source_size=source_size,
             transformations=transformations_list,
             timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         )
@@ -381,7 +397,7 @@ def create_sample_comparison():
     # Add transformations
     # 1. Simple resize
     comparator.add_transformation(
-        steps=[MethodCall("resize", (400, 300), name="Resize")],
+        steps=[MethodCall("resize", (800, 800), name="Resize")],
         name="Simple Resize",
         description="Basic image resizing to 400x300 pixels",
     )
@@ -396,7 +412,7 @@ def create_sample_comparison():
     # 3. Multiple transformations
     comparator.add_transformation(
         steps=[
-            MethodCall("resize", (400, 300), name="Resize"),
+            MethodCall("resize", (4000, 3000), name="Resize"),
             MethodCall("grayscale", name="Grayscale"),
             MethodCall("quality", (85,), name="Quality"),
         ],

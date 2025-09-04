@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en" class="uk-light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Backend Comparison</title>
+
+    <!-- UIkit CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.16.26/dist/css/uikit.min.css" />
+    <style>
+        /* Style for URL input */
+        .uk-form-icon-flip {
+            color: var(--uk-text-muted);
+            transition: color 0.2s ease-in-out;
+        }
+        .uk-form-icon-flip:hover {
+            color: var(--uk-link-color);
+        }
+        /* Ensure input text is visible in both themes */
+        [data-theme="light"] .uk-input {
+            color: #222 !important;
+        }
+        [data-theme="dark"] .uk-input {
+            color: #f5f5f5 !important;
+        }
+    </style>
+
+    <!-- UIkit JS -->
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.16.26/dist/js/uikit.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.16.26/dist/js/uikit-icons.min.js"></script>
+
+
+    <!-- Prism.js for syntax highlighting -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" id="prism-theme-dark" media="not all" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet" id="prism-theme-light" media="all" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+
+    <style>
+        /* Ensure full viewport height */
+        html, body {
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Base light theme */
+        :root {
+            --card-bg: #fff;
+            --card-color: #333;
+            --section-bg: #f8f8f8;
+            --section-color: #333;
+            --text-primary: #333;
+            --text-secondary: #666;
+            --border-color: #e5e5e5;
+        }
+
+        /* Dark theme overrides */
+        [data-theme="dark"] {
+            --card-bg: #1e1e1e;
+            --card-color: #f8f8f8;
+            --section-bg: #121212;
+            --section-color: #f8f8f8;
+            --text-primary: #f8f8f8;
+            --text-secondary: #bbb;
+            --border-color: #444;
+        }
+
+        /* Ensure text colors are properly set */
+        body {
+            color: var(--text-primary);
+        }
+
+        .uk-card {
+            color: var(--text-primary);
+        }
+
+        .uk-text-meta, .uk-text-muted {
+            color: var(--text-secondary) !important;
+        }
+
+        /* Apply theme colors */
+        body {
+            background-color: var(--section-bg);
+            color: var(--section-color);
+        }
+
+        .uk-card-default {
+            background-color: var(--card-bg);
+            color: var(--card-color);
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .uk-section-default {
+            background-color: var(--section-bg);
+        }
+
+        /* Ensure titles are visible in both themes */
+        .uk-card-title,
+        .uk-h1, .uk-h2, .uk-h3, .uk-h4, .uk-h5, .uk-h6,
+        .uk-heading-small, .uk-heading-medium, .uk-heading-large,
+        .uk-heading-xlarge, .uk-heading-2xlarge {
+            color: var(--text-primary) !important;
+        }
+
+        /* Code block styling */
+        .view-container[data-view="metadata"] > div {
+            border: 1px solid var(--card-border, #e5e5e5);
+            border-radius: 4px;
+            background: var(--card-bg, #fff);
+            padding: 10px;
+            height: 180px;
+            position: relative;
+            overflow: auto;
+            -webkit-overflow-scrolling: touch;
+            box-sizing: border-box;
+        }
+
+        .view-container[data-view="metadata"] > div > div {
+            padding: 5px 0;
+            box-sizing: border-box;
+            min-width: calc(100% - 20px);
+            display: inline-block;
+        }
+
+        /* Scrollbar styling */
+        .view-container[data-view="metadata"] > div {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0,0,0,0.2) transparent;
+        }
+
+        /* Webkit scrollbar */
+        .view-container[data-view="metadata"] > div::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        .view-container[data-view="metadata"] > div::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .view-container[data-view="metadata"] > div::-webkit-scrollbar-thumb {
+            background-color: rgba(0,0,0,0.2);
+            border-radius: 3px;
+            border: 2px solid transparent;
+            background-clip: content-box;
+        }
+
+        .view-container[data-view="metadata"] > div::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(0,0,0,0.3);
+        }
+
+        [data-theme="dark"] .view-container[data-view="metadata"] > div {
+            background: #1e1e1e;
+            border-color: #444;
+        }
+
+        .view-container[data-view="metadata"] pre {
+            margin: 0;
+            padding: 0 10px 0 0;
+            background: transparent !important;
+            border: none !important;
+            color: inherit;
+            white-space: pre;
+            font-family: monospace;
+            font-size: 0.9em;
+            line-height: 1.4;
+            display: inline-block;
+            min-width: 100%;
+        }
+
+        .view-container[data-view="metadata"] code {
+            white-space: pre !important;
+            word-break: normal !important;
+            word-wrap: normal !important;
+        }
+
+        /* Theme toggle button */
+        .uk-button-default {
+            background: #f8f8f8 !important;
+            color: #333 !important;
+            border: 1px solid #e5e5e5 !important;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        [data-theme="dark"] .uk-button-default {
+            background: #1e1e1e !important;
+            color: #f8f8f8 !important;
+            border-color: #444 !important;
+        }
+
+        /* Ensure images are properly contained */
+        .uk-card img {
+            max-height: 100px;
+            width: auto;
+            margin: 0 auto;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+ <!-- Lightbox Template -->
+    <template id="js-lightbox-template">
+        <div class="uk-lightbox uk-overflow-hidden">
+            <div class="uk-lightbox-items"></div>
+            <div class="uk-position-top-right uk-position-small uk-transition-fade" uk-inverse>
+                <button class="uk-lightbox-close uk-close-large" type="button" uk-close></button>
+            </div>
+            <div class="uk-position-bottom uk-position-medium uk-text-center uk-transition-fade" uk-inverse>
+                <div class="uk-grid-small uk-width-auto uk-flex-inline uk-flex-middle" uk-grid>
+                    <div><a class="uk-lightbox-slidenav" href uk-slidenav-previous uk-lightbox-item="previous"></a></div>
+                    <div><div class="uk-lightbox-counter"></div></div>
+                    <div><a class="uk-lightbox-slidenav" href uk-slidenav-next uk-lightbox-item="next"></a></div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Main container -->
+    <div class="uk-section uk-section-default" uk-height-viewport="expand: true" data-theme="light">
+        <div class="uk-container uk-container-large uk-padding">
+            <!-- Header card -->
+            <div class="uk-card uk-card-default uk-card-body uk-margin-medium-bottom">
+                <div class="uk-flex uk-flex-between uk-flex-middle">
+                    <div>
+                        <h1 class="uk-h3 uk-margin-remove">Image Comparison</h1>
+                        <div class="uk-text-meta">
+                            Generated on {{ timestamp }}
+                            {% if source_size %}
+                            <br>Source: {{ source_size[0] }} × {{ source_size[1] }}px
+                            {% endif %}
+                        </div>
+                    </div>
+                    <!-- Theme toggle button will be moved to fixed position -->
+                    <input type="hidden" id="themeState" value="light">
+                </div>
+
+                {% if source_url %}
+                <div class="uk-margin-top">
+                    <div>
+                        <div>
+                            <a class="uk-inline lightbox-item" href="{{ source_url }}" data-caption="<strong>Source Image</strong>">
+                                <img src="{{ source_url }}" alt="Source Image" class="uk-border-rounded" style="max-height: 150px; width: auto;">
+                            </a>
+                        </div>
+                        <div class="uk-margin-small-top">
+                            <a href="{{ source_url }}" class="uk-link-muted" target="_blank" rel="noopener" uk-icon="icon: link">
+                                <span class="uk-text-small">Original Image</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Transformations -->
+            {% for transform in transformations %}
+            <div class="uk-card uk-card-default uk-card-body uk-margin-bottom">
+                <h2 class="uk-card-title">{{ transform.name }}</h2>
+                {% if transform.description %}
+                <p class="uk-text-meta">{{ transform.description }}</p>
+                {% endif %}
+
+                <div class="uk-margin">
+                    <pre><code class="language-python">image{{ transform.steps }}</code></pre>
+                </div>
+
+                <div class="uk-child-width-1-1 uk-child-width-1-2@s uk-child-width-1-3@m uk-grid-match" uk-grid>
+                    {% for backend, result in transform.results.items() %}
+                        {% if result.success %}
+                        <div>
+                            <div class="uk-card uk-card-default uk-card-body">
+                                <h5 class="uk-card-title">{{ backend }}</h5>
+
+                                <!-- Toggle between Image and Metadata -->
+                                <div class="uk-margin-remove">
+                                    <div class="uk-height-small uk-position-relative" style="min-height: 180px;">
+                                        <!-- Toggle Button with background -->
+                                        <button class="uk-button uk-button-default uk-button-small"
+                                                onclick="toggleView(this)"
+                                                type="button"
+                                                uk-tooltip="View metadata"
+                                                data-showing="image"
+                                                style="position: absolute; top: 10px; right: 10px; z-index: 10; background-color: rgba(255, 255, 255, 0.9); border-radius: 50%; width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; border: 1px solid var(--card-border, #e5e5e5);">
+                                            <span uk-icon="icon: code; ratio: 0.7"></span>
+                                        </button>
+
+                                        <!-- Image View -->
+                                        <div class="view-container" data-view="image">
+                                            <div class="uk-height-small" style="display: flex; justify-content: center; align-items: center; padding: 5px; background: var(--card-bg, #fff); border: 1px solid var(--card-border, #e5e5e5); border-radius: 4px; height: 180px;">
+                                                <div uk-lightbox style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;">
+                                                    <a class="uk-inline" href="{{ result.url }}" data-caption="<strong>{{ backend }}</strong> - {{ transform.name }}">
+                                                        <img src="{{ result.url }}" alt="{{ backend }} result" style="max-height: 160px; max-width: 100%; object-fit: contain;">
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Metadata View -->
+                                        <div class="view-container" data-view="metadata" hidden>
+                                            <div class="uk-height-small">
+                                                {% if result.meta %}
+                                                    <pre class="uk-margin-remove"><code class="language-json" style="font-size: 0.8rem; line-height: 1.2; white-space: pre-wrap;">{{ result.meta|tojson(indent=2) }}</code></pre>
+                                                {% else %}
+                                                    <p class="uk-text-meta uk-margin-remove">No metadata available</p>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <script>
+                                function toggleView(button) {
+                                    const container = button.closest('.uk-position-relative');
+                                    const currentView = button.getAttribute('data-showing');
+                                    const newView = currentView === 'image' ? 'metadata' : 'image';
+
+                                    // Toggle visibility
+                                    container.querySelector(`[data-view="${currentView}"]`).hidden = true;
+                                    container.querySelector(`[data-view="${newView}"]`).hidden = false;
+
+                                    // Update button
+                                    button.setAttribute('data-showing', newView);
+                                    button.setAttribute('uk-tooltip', `View ${currentView}`);
+
+                                    // Update icon based on the new view
+                                    const icon = button.querySelector('span');
+                                    if (newView === 'metadata') {
+                                        icon.setAttribute('uk-icon', 'icon: image');
+                                        button.style.backgroundColor = 'rgba(0, 0, 0, 0.1)';
+                                    } else {
+                                        icon.setAttribute('uk-icon', 'icon: code');
+                                        button.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+                                    }
+
+                                    UIkit.update();
+                                }
+                                </script>
+
+                                <!-- URL with Embedded Action Buttons -->
+                                <div class="uk-margin">
+                                    <div class="uk-inline uk-width-1-1">
+                                        <a class="uk-form-icon" href="{{ result.url }}" target="_blank" uk-icon="icon: forward" uk-tooltip="Open in new tab"></a>
+                                        <input class="uk-input uk-form-small" type="text" value="{{ result.url }}" readonly style="padding-left: 40px; padding-right: 40px;">
+                                        <a class="uk-form-icon uk-form-icon-flip" href="#" uk-icon="icon: copy" onclick="copyToClipboard(this.previousElementSibling); return false;" uk-tooltip="Copy URL"></a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div>
+                            <div class="uk-card uk-card-danger uk-card-body">
+                                <h3 class="uk-card-title">{{ backend }}</h3>
+                                <p class="uk-text-danger">Error: {{ result.error }}</p>
+                                {% if result.traceback %}
+                                <details class="uk-margin-top">
+                                    <summary>Show traceback</summary>
+                                    <pre class="uk-margin-remove"><code class="language-python">{{ result.traceback }}</code></pre>
+                                </details>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script>
+        // Theme toggle functionality
+        function toggleTheme() {
+            const container = document.querySelector('.uk-section');
+            const currentTheme = container.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+            // Update theme attribute
+            container.setAttribute('data-theme', newTheme);
+
+            // Update UI elements
+            if (newTheme === 'dark') {
+                document.getElementById('themeIcon').setAttribute('uk-icon', 'icon: sun');
+                document.getElementById('prism-theme-dark').media = 'all';
+                document.getElementById('prism-theme-light').media = 'not all';
+            } else {
+                document.getElementById('themeIcon').setAttribute('uk-icon', 'icon: paint-bucket');
+                document.getElementById('prism-theme-light').media = 'all';
+                document.getElementById('prism-theme-dark').media = 'not all';
+            }
+
+            // Save preference
+            localStorage.setItem('theme', newTheme);
+            document.getElementById('themeState').value = newTheme;
+
+            // Force UIkit to update components
+            if (typeof UIkit !== 'undefined') {
+                UIkit.update(null, 'update');
+            }
+
+            // Update Prism if available
+            if (window.Prism) {
+                Prism.highlightAll();
+            }
+        }
+
+        // Copy to clipboard function
+        function copyToClipboard(element) {
+            element.select();
+            document.execCommand('copy');
+
+            // Show notification
+            const notification = UIkit.notification({
+                message: 'URL copied to clipboard!',
+                status: 'success',
+                pos: 'bottom-center',
+                timeout: 2000
+            });
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set initial theme
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            const container = document.querySelector('.uk-section');
+            container.setAttribute('data-theme', savedTheme);
+
+            // Update UI elements
+            if (savedTheme === 'dark') {
+                document.getElementById('themeIcon').setAttribute('uk-icon', 'icon: sun');
+                document.getElementById('prism-theme-dark').media = 'all';
+                document.getElementById('prism-theme-light').media = 'not all';
+            }
+            const html = document.documentElement;
+
+            if (savedTheme === 'dark') {
+                html.classList.remove('uk-light');
+                html.classList.add('uk-dark');
+                document.getElementById('themeIcon').setAttribute('uk-icon', 'icon: sun');
+                document.getElementById('prism-theme-dark').media = 'all';
+                document.getElementById('prism-theme-light').media = 'not all';
+            } else {
+                html.classList.remove('uk-dark');
+                html.classList.add('uk-light');
+                document.getElementById('themeIcon').setAttribute('uk-icon', 'icon: paint-bucket');
+                document.getElementById('prism-theme-light').media = 'all';
+                document.getElementById('prism-theme-dark').media = 'not all';
+            }
+
+            // Initialize UIkit components
+            if (typeof UIkit !== 'undefined') {
+                UIkit.update();
+            }
+
+            // Initialize Prism syntax highlighting
+            if (window.Prism) {
+                Prism.highlightAll();
+            }
+        });
+    </script>
+    <!-- Fixed theme toggle button -->
+    <div class="uk-position-fixed uk-position-bottom-right uk-margin-large uk-margin-right" style="z-index: 1000;">
+        <button class="uk-button uk-button-default uk-border-circle" onclick="toggleTheme()" title="Toggle dark/light mode" style="width: 50px; height: 50px; padding: 0; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <span id="themeIcon" uk-icon="icon: paint-bucket; ratio: 1.2"></span>
+        </button>
+    </div>
+</body>
+</html>
