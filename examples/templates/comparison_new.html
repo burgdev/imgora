@@ -37,8 +37,10 @@
             --card-color: #333333;
             --button-bg: #f8f8f8;
             --text-primary: #333333;
-            --text-secondary: #666666;
+            --text-secondary:rgb(109, 109, 109);
             --border-color: #e5e5e5;
+            --success-color: #28a745;
+            --error-color: #dc3545;
         }
 
         /* Dark theme overrides */
@@ -50,8 +52,10 @@
             --card-color: #f8f8f8;
             --button-bg:rgb(59, 59, 59);
             --text-primary: #f8f8f8;
-            --text-secondary: #bbbbbb;
+            --text-secondary:rgb(165, 165, 165);
             --border-color: #444444;
+            --success-color: #28a745;
+            --error-color: #dc3545;
         }
 
         /* Ensure text colors are properly set */
@@ -61,25 +65,40 @@
         }
 
         /* Style for URL input */
-        .uk-form-icon-flip {
-            color: var(--uk-text-muted);
-            transition: color 0.2s ease-in-out;
+        .uk-form-icon{
+            color: var(--text-secondary) !important;
+            transition: color 0.2s ease-in-out !important;
         }
-        .uk-form-icon-flip:hover {
-            color: var(--uk-link-color);
-        }
-        /* Ensure input text is visible in both themes */
-        .uk-input {
+        .uk-form-icon:hover {
             color: var(--text-primary) !important;
         }
+        .uk-input {
+            background-color: var(--card-bg) !important;
+            border: 1px solid var(--border-color) !important;
+            color: var(--text-secondary) !important;
+        }
+
         .uk-card {
             color: var(--text-primary);
         }
 
-        .uk-text-meta, .uk-text-muted {
+
+        .uk-card-footer {
+            border-top: 1px solid var(--border-color) !important;
+        }
+        pre {
             color: var(--text-secondary) !important;
+            background-color: var(--card-bg) !important;
+            border: 1px solid var(--border-color) !important;
         }
 
+
+        .operation pre {
+            margin: 0 !important;
+            border-radius: 6px !important;
+            padding: 5px !important;
+            padding-left:15px !important;
+        }
 
         .uk-card-default {
             background-color: var(--card-bg);
@@ -100,6 +119,10 @@
             color: var(--text-primary) !important;
         }
 
+        .uk-text-meta, .uk-text-muted {
+            color: var(--text-secondary) !important;
+        }
+
 
         /* Image View */
         .view-container[data-view="image"] > div {
@@ -109,6 +132,12 @@
             padding: 10px;
             background: repeating-conic-gradient(var(--card-bg) 0 25%, var(--body-bg) 0 50%) 50% / 30px 30px;
             height: 260px;
+        }
+        .view-container[data-view="image"] > div img:hover {
+            transform: scale(1.04) rotate(3deg);
+            transition: transform 0.1s ease-in-out;
+            box-shadow: 0 5px 8px rgba(0,0,0,0.1);
+            border: 2px solid var(--success-color);
         }
 
         /* Code block styling */
@@ -224,13 +253,13 @@
             right: unset !important;
             left: 22px !important;
             top: -14px !important;
-            background-color: #32d296 !important;
+            background-color: var(--success-color) !important;
             /* color: var(--card-text) !important; */
             text-transform: unset !important;
             color: #000000 !important;
         }
         .backend-label {
-            background-color: #32d296 !important;
+            background-color: var(--success-color)!important;
             color: #000000 !important;
             text-transform: unset !important;
         }
@@ -277,14 +306,16 @@
             <!-- Transformations (operations) -->
             {% for transform in transformations %}
             <div class="uk-card uk-card-default section-card-default uk-card-body uk-margin-bottom" >
-                <h2 class="uk-card-title">{{ transform.name }}</h2>
+                    <div uk-grid>
+                        <div  class="uk-width-expand@m" style="min-width: 500px;"><h2 class="uk-card-title">{{ transform.name }}</h2></div>
+                        <div class="operation">
+                            <pre><code class="language-python">image{{ transform.steps }}</code></pre>
+                        </div>
+                    </div>
                 {% if transform.description %}
                 <p class="uk-text-meta">{{ transform.description }}</p>
                 {% endif %}
 
-                <div class="uk-margin">
-                    <pre><code class="language-python">image{{ transform.steps }}</code></pre>
-                </div>
 
                 <div uk-lightbox="nav: thumbnav; slidenav: false" class="uk-child-width-1-1 uk-child-width-1-2@s uk-child-width-1-3@m uk-grid-match uk-margin-medium-top" uk-grid >
                     <!-- Backend Results -->
@@ -331,7 +362,7 @@
 
                                 <!-- URL with Embedded Action Buttons -->
                                 <div class="uk-card-footer">
-                                    <div class="uk-inline uk-width-1-1">
+                                    <div class="uk-inline uk-width-1-1 uk-text-muted">
                                         <button class="uk-form-icon" uk-icon="icon: forward" uk-tooltip="Open in new tab" onclick="window.open('{{ result.url }}', '_blank')"></button>
                                         <input class="uk-input uk-form-small" type="text" value="{{ result.url }}" readonly style="padding-left: 40px; padding-right: 40px;">
                                         <button class="uk-form-icon uk-form-icon-flip" uk-icon="icon: copy" onclick="copyToClipboard(this.previousElementSibling); return false;" uk-tooltip="Copy URL"></button>
