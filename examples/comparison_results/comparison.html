@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en" class="uk-light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Backend Comparison</title>
+
+    <!-- UIkit CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.16.26/dist/css/uikit.min.css" />
+
+    <!-- UIkit JS -->
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.16.26/dist/js/uikit.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.16.26/dist/js/uikit-icons.min.js"></script>
+
+
+    <!-- Prism.js for syntax highlighting -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" id="prism-theme-dark" media="not all" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet" id="prism-theme-light" media="all" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+
+    <style>
+        /* Ensure full viewport height */
+        html, body {
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+            transition: background-color 0.4s, color 0.5s;
+        }
+
+        /* Base light theme */
+        :root {
+            --body-bg:rgb(232, 232, 232);
+            --section-bg: #f8f8f8;
+            --section-color: #333333;
+            --card-bg: #ffffff;
+            --card-color: #333333;
+            --button-bg: #f8f8f8;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --border-color: #e5e5e5;
+        }
+
+        /* Dark theme overrides */
+        [data-theme="dark"] {
+            --body-bg:rgb(27, 26, 26);
+            --section-bg:rgb(20, 20, 20);
+            --section-color: #f8f8f8;
+            --card-bg: #1e1e1e;
+            --card-color: #f8f8f8;
+            --button-bg:rgb(59, 59, 59);
+            --text-primary: #f8f8f8;
+            --text-secondary: #bbbbbb;
+            --border-color: #444444;
+        }
+
+        /* Ensure text colors are properly set */
+        body {
+            background-color: var(--body-bg);
+            color: var(--section-color);
+        }
+
+        /* Style for URL input */
+        .uk-form-icon-flip {
+            color: var(--uk-text-muted);
+            transition: color 0.2s ease-in-out;
+        }
+        .uk-form-icon-flip:hover {
+            color: var(--uk-link-color);
+        }
+        /* Ensure input text is visible in both themes */
+        .uk-input {
+            color: var(--text-primary) !important;
+        }
+        .uk-card {
+            color: var(--text-primary);
+        }
+
+        .uk-text-meta, .uk-text-muted {
+            color: var(--text-secondary) !important;
+        }
+
+
+        .uk-card-default {
+            background-color: var(--card-bg);
+            color: var(--card-color);
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        /* Ensure section background is properly set */
+        .section-card-default {
+            background-color: var(--section-bg) !important;
+        }
+
+        /* Ensure titles are visible in both themes */
+        .uk-card-title,
+        .uk-h1, .uk-h2, .uk-h3, .uk-h4, .uk-h5, .uk-h6,
+        .uk-heading-small, .uk-heading-medium, .uk-heading-large,
+        .uk-heading-xlarge, .uk-heading-2xlarge {
+            color: var(--text-primary) !important;
+        }
+
+
+        /* Image View */
+        .view-container[data-view="image"] > div {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            background: repeating-conic-gradient(var(--card-bg) 0 25%, var(--body-bg) 0 50%) 50% / 30px 30px;
+            height: 260px;
+        }
+
+        /* Code block styling */
+        .view-container[data-view="metadata"] > div {
+            / * border: 1px solid var(--card-border, #e5e5e5); */
+            border: unset;
+            border-radius: unset;
+            background: var(--card-bg, #ffffff);
+            padding: 10px;
+            padding-top: 20px;
+            height: 260px;
+            position: relative;
+            overflow: auto;
+            -webkit-overflow-scrolling: touch;
+            box-sizing: border-box;
+        }
+
+        .view-container[data-view="metadata"] > div > div {
+            padding: 5px 0;
+            box-sizing: border-box;
+            min-width: calc(100% - 20px);
+            display: inline-block;
+        }
+
+        /* Scrollbar styling */
+        .view-container[data-view="metadata"] > div {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0,0,0,0.2) transparent;
+        }
+
+        /* Webkit scrollbar */
+        .view-container[data-view="metadata"] > div::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        .view-container[data-view="metadata"] > div::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .view-container[data-view="metadata"] > div::-webkit-scrollbar-thumb {
+            background-color: rgba(0,0,0,0.2);
+            border-radius: 3px;
+            border: 2px solid transparent;
+            background-clip: content-box;
+        }
+
+        .view-container[data-view="metadata"] > div::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(0,0,0,0.3);
+        }
+
+        [data-theme="dark"] .view-container[data-view="metadata"] > div {
+            background: #1e1e1e;
+            border-color: #444;
+        }
+
+        .view-container[data-view="metadata"] pre {
+            margin: 0;
+            padding: 0 10px 0 0;
+            background: transparent !important;
+            border: none !important;
+            color: inherit;
+            white-space: pre;
+            font-family: monospace;
+            font-size: 0.9em;
+            line-height: 1.4;
+            display: inline-block;
+            min-width: 100%;
+        }
+
+        .view-container[data-view="metadata"] code {
+            white-space: pre !important;
+            word-break: normal !important;
+            word-wrap: normal !important;
+        }
+
+        /* Button */
+        .uk-button-default {
+            background:var(--button-bg) !important;
+            color: var(--card-text) !important;
+            border: 1px solid var(--card-border) !important;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        [data-theme="dark"] .uk-button-default {
+            background: var(--button-bg) !important;
+            color: var(--card-text) !important;
+            border-color: var(--card-border) !important;
+        }
+        /* Theme toggle button */
+        .theme-toggle-button {
+            background:rgb(120, 120, 120) !important;
+            color: #f8f8f8 !important;
+            border: 1px solid #e5e5e5 !important;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1) !important;
+        }
+
+        [data-theme="dark"] .theme-toggle-button {
+            background:rgb(179, 179, 179) !important;
+            color: #333333 !important;
+            border-color: #444 !important;
+        }
+
+        /* Ensure images are properly contained */
+        .uk-card img {
+            max-height: 100px;
+            width: auto;
+            margin: 0 auto;
+            display: block;
+        }
+
+        .card-backend-label{
+            right: unset !important;
+            left: 22px !important;
+            top: -14px !important;
+            background-color: #32d296 !important;
+            /* color: var(--card-text) !important; */
+            text-transform: unset !important;
+            color: #000000 !important;
+        }
+        .backend-label {
+            background-color: #32d296 !important;
+            color: #000000 !important;
+            text-transform: unset !important;
+        }
+    </style>
+</head>
+<body data-theme="light">
+    <!-- Main container -->
+    <div class="uk-section" uk-height-viewport="expand: true">
+        <div class="uk-container uk-container-large">
+            <!-- Header card -->
+            <div class="uk-card uk-card-default section-card-default uk-card-body uk-margin-medium-bottom">
+                <div class="uk-flex uk-flex-between uk-flex-middle">
+                    <div>
+                        <h1 class="uk-h3 uk-margin-remove">Image Comparison</h1>
+                        <div class="uk-text-meta">
+                            Generated on 2025-09-04 23:36:32
+                        </div>
+                    </div>
+                    <!-- Theme toggle button will be moved to fixed position -->
+                    <input type="hidden" id="themeState" value="light">
+                </div>
+
+                <div class="uk-margin-top">
+                    <div>
+                        <div>
+                            <a class="uk-inline lightbox-item" href="https://wsrv.nl/lichtenstein.jpg" data-caption="<strong>Source Image</strong>">
+                                <img src="https://wsrv.nl/lichtenstein.jpg" alt="Source Image" class="uk-border-rounded" style="max-height: 150px; width: auto;">
+                            </a>
+                        </div>
+                        <div class="uk-margin-small-top">
+                            <a href="https://wsrv.nl/lichtenstein.jpg" class="uk-link-muted" target="_blank" rel="noopener" uk-icon="icon: link">
+                                <span class="uk-text-small">Original Image</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transformations (operations) -->
+            <div class="uk-card uk-card-default section-card-default uk-card-body uk-margin-bottom" >
+                <h2 class="uk-card-title">Resize</h2>
+                <p class="uk-text-meta">Basic image resizing to 1000x600 pixels</p>
+
+                <div class="uk-margin">
+                    <pre><code class="language-python">image.resize(1000, 600)</code></pre>
+                </div>
+
+                <div uk-lightbox="nav: thumbnav; slidenav: false" class="uk-child-width-1-1 uk-child-width-1-2@s uk-child-width-1-3@m uk-grid-match uk-margin-medium-top" uk-grid >
+                    <!-- Backend Results -->
+                        <div>
+                            <div class="uk-card uk-card-default uk-card-small uk-card-media-top ">
+                                    <div class="uk-card-badge uk-label card-backend-label">
+                                    Imagor
+                                    </div>
+                                <!-- Toggle between Image and Metadata -->
+                                <div class="uk-margin-remove ">
+                                    <div class="uk-height-small uk-position-relative " style="min-height: 260px;">
+                                        <!-- Toggle Button with background -->
+                                        <button class="uk-button uk-button-default uk-button-small"
+                                                onclick="toggleView(this)"
+                                                type="button"
+                                                uk-tooltip="View metadata"
+                                                data-showing="image"
+                                                style="position: absolute; top: 10px; right: 10px; z-index: 10; background-color: rgba(255, 255, 255, 0.9); border-radius: 50%; width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; border: 1px solid var(--card-border, #e5e5e5);">
+                                            <span uk-icon="icon: code; ratio: 0.7"></span>
+                                        </button>
+
+                                        <!-- Image View -->
+                                        <div class="view-container" data-view="image">
+                                            <div class="uk-height-small" data-view="image">
+                                                    <a class="uk-inline" href="http://localhost:8018/PgxnuE0PNNpEwUmfReMQMf-FAKcf1g420IWIvJQetJk=/fit-in/1000x600/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" data-type="image" data-caption="<strong class='uk-label backend-label'>Imagor</strong><br /><a href='http://localhost:8018/PgxnuE0PNNpEwUmfReMQMf-FAKcf1g420IWIvJQetJk=/fit-in/1000x600/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg' target='_blank' rel='noopener' uk-icon='icon: link'>PgxnuE0PNNpEwUmfReMQMf-FAKcf1g420IWIvJQetJk=/fit-in/1000x600/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg</a><br /><small>Resize</small>">
+                                                        <img src="http://localhost:8018/PgxnuE0PNNpEwUmfReMQMf-FAKcf1g420IWIvJQetJk=/fit-in/1000x600/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" alt="Imagor result" style="max-height: 220px; max-width: 100%; object-fit: contain;">
+                                                    </a>
+                                            </div>
+                                        </div>
+                                        <!-- Metadata View -->
+                                        <div class="view-container" data-view="metadata" hidden>
+                                            <div class="uk-height-small">
+                                                    <pre class="uk-margin-remove"><code class="language-json" style="font-size: 0.8rem; line-height: 1.2; white-space: pre-wrap;">{
+  &#34;format&#34;: &#34;jpeg&#34;,
+  &#34;content_type&#34;: &#34;image/jpeg&#34;,
+  &#34;width&#34;: 487,
+  &#34;height&#34;: 600,
+  &#34;orientation&#34;: 0,
+  &#34;pages&#34;: 1,
+  &#34;bands&#34;: 3,
+  &#34;exif&#34;: {}
+}</code></pre>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- URL with Embedded Action Buttons -->
+                                <div class="uk-card-footer">
+                                    <div class="uk-inline uk-width-1-1">
+                                        <button class="uk-form-icon" uk-icon="icon: forward" uk-tooltip="Open in new tab" onclick="window.open('http://localhost:8018/PgxnuE0PNNpEwUmfReMQMf-FAKcf1g420IWIvJQetJk=/fit-in/1000x600/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg', '_blank')"></button>
+                                        <input class="uk-input uk-form-small" type="text" value="http://localhost:8018/PgxnuE0PNNpEwUmfReMQMf-FAKcf1g420IWIvJQetJk=/fit-in/1000x600/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" readonly style="padding-left: 40px; padding-right: 40px;">
+                                        <button class="uk-form-icon uk-form-icon-flip" uk-icon="icon: copy" onclick="copyToClipboard(this.previousElementSibling); return false;" uk-tooltip="Copy URL"></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="uk-card uk-card-default uk-card-small uk-card-media-top ">
+                                    <div class="uk-card-badge uk-label card-backend-label">
+                                    Thumbor
+                                    </div>
+                                <!-- Toggle between Image and Metadata -->
+                                <div class="uk-margin-remove ">
+                                    <div class="uk-height-small uk-position-relative " style="min-height: 260px;">
+                                        <!-- Toggle Button with background -->
+                                        <button class="uk-button uk-button-default uk-button-small"
+                                                onclick="toggleView(this)"
+                                                type="button"
+                                                uk-tooltip="View metadata"
+                                                data-showing="image"
+                                                style="position: absolute; top: 10px; right: 10px; z-index: 10; background-color: rgba(255, 255, 255, 0.9); border-radius: 50%; width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; border: 1px solid var(--card-border, #e5e5e5);">
+                                            <span uk-icon="icon: code; ratio: 0.7"></span>
+                                        </button>
+
+                                        <!-- Image View -->
+                                        <div class="view-container" data-view="image">
+                                            <div class="uk-height-small" data-view="image">
+                                                    <a class="uk-inline" href="http://localhost:8019/Q8oGNZXg-wPrMApt4da2gVPUHeU=/fit-in/1000x600/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" data-type="image" data-caption="<strong class='uk-label backend-label'>Thumbor</strong><br /><a href='http://localhost:8019/Q8oGNZXg-wPrMApt4da2gVPUHeU=/fit-in/1000x600/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg' target='_blank' rel='noopener' uk-icon='icon: link'>Q8oGNZXg-wPrMApt4da2gVPUHeU=/fit-in/1000x600/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg</a><br /><small>Resize</small>">
+                                                        <img src="http://localhost:8019/Q8oGNZXg-wPrMApt4da2gVPUHeU=/fit-in/1000x600/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" alt="Thumbor result" style="max-height: 220px; max-width: 100%; object-fit: contain;">
+                                                    </a>
+                                            </div>
+                                        </div>
+                                        <!-- Metadata View -->
+                                        <div class="view-container" data-view="metadata" hidden>
+                                            <div class="uk-height-small">
+                                                    <pre class="uk-margin-remove"><code class="language-json" style="font-size: 0.8rem; line-height: 1.2; white-space: pre-wrap;">{
+  &#34;thumbor&#34;: {
+    &#34;source&#34;: {
+      &#34;url&#34;: &#34;https%3A//wsrv.nl/lichtenstein.jpg&#34;,
+      &#34;width&#34;: 487,
+      &#34;height&#34;: 600,
+      &#34;frameCount&#34;: 1
+    },
+    &#34;operations&#34;: [
+      {
+        &#34;type&#34;: &#34;resize&#34;,
+        &#34;width&#34;: 487,
+        &#34;height&#34;: 600.0
+      }
+    ],
+    &#34;target&#34;: {
+      &#34;width&#34;: 487,
+      &#34;height&#34;: 600.0
+    },
+    &#34;focal_points&#34;: [
+      {
+        &#34;x&#34;: 983,
+        &#34;y&#34;: 1210,
+        &#34;z&#34;: 1.0,
+        &#34;height&#34;: 1,
+        &#34;width&#34;: 1,
+        &#34;origin&#34;: &#34;alignment&#34;
+      }
+    ]
+  }
+}</code></pre>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- URL with Embedded Action Buttons -->
+                                <div class="uk-card-footer">
+                                    <div class="uk-inline uk-width-1-1">
+                                        <button class="uk-form-icon" uk-icon="icon: forward" uk-tooltip="Open in new tab" onclick="window.open('http://localhost:8019/Q8oGNZXg-wPrMApt4da2gVPUHeU=/fit-in/1000x600/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg', '_blank')"></button>
+                                        <input class="uk-input uk-form-small" type="text" value="http://localhost:8019/Q8oGNZXg-wPrMApt4da2gVPUHeU=/fit-in/1000x600/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" readonly style="padding-left: 40px; padding-right: 40px;">
+                                        <button class="uk-form-icon uk-form-icon-flip" uk-icon="icon: copy" onclick="copyToClipboard(this.previousElementSibling); return false;" uk-tooltip="Copy URL"></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="uk-card uk-card-default uk-card-small uk-card-media-top ">
+                                    <div class="uk-card-badge uk-label card-backend-label">
+                                    WsrvNl
+                                    </div>
+                                <!-- Toggle between Image and Metadata -->
+                                <div class="uk-margin-remove ">
+                                    <div class="uk-height-small uk-position-relative " style="min-height: 260px;">
+                                        <!-- Toggle Button with background -->
+                                        <button class="uk-button uk-button-default uk-button-small"
+                                                onclick="toggleView(this)"
+                                                type="button"
+                                                uk-tooltip="View metadata"
+                                                data-showing="image"
+                                                style="position: absolute; top: 10px; right: 10px; z-index: 10; background-color: rgba(255, 255, 255, 0.9); border-radius: 50%; width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; border: 1px solid var(--card-border, #e5e5e5);">
+                                            <span uk-icon="icon: code; ratio: 0.7"></span>
+                                        </button>
+
+                                        <!-- Image View -->
+                                        <div class="view-container" data-view="image">
+                                            <div class="uk-height-small" data-view="image">
+                                                    <a class="uk-inline" href="https://wsrv.nl/?url=https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg&amp;w=1000&amp;h=600" data-type="image" data-caption="<strong class='uk-label backend-label'>WsrvNl</strong><br /><a href='https://wsrv.nl/?url=https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg&amp;w=1000&amp;h=600' target='_blank' rel='noopener' uk-icon='icon: link'>?url=https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg&amp;w=1000&amp;h=600</a><br /><small>Resize</small>">
+                                                        <img src="https://wsrv.nl/?url=https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg&amp;w=1000&amp;h=600" alt="WsrvNl result" style="max-height: 220px; max-width: 100%; object-fit: contain;">
+                                                    </a>
+                                            </div>
+                                        </div>
+                                        <!-- Metadata View -->
+                                        <div class="view-container" data-view="metadata" hidden>
+                                            <div class="uk-height-small">
+                                                    <pre class="uk-margin-remove"><code class="language-json" style="font-size: 0.8rem; line-height: 1.2; white-space: pre-wrap;">{
+  &#34;format&#34;: &#34;jpeg&#34;,
+  &#34;width&#34;: 487,
+  &#34;height&#34;: 600,
+  &#34;space&#34;: &#34;srgb&#34;,
+  &#34;channels&#34;: 3,
+  &#34;depth&#34;: &#34;uchar&#34;,
+  &#34;density&#34;: 71,
+  &#34;chromaSubsampling&#34;: &#34;4:2:0&#34;,
+  &#34;isProgressive&#34;: false,
+  &#34;isPalette&#34;: false,
+  &#34;hasProfile&#34;: false,
+  &#34;hasAlpha&#34;: false,
+  &#34;orientation&#34;: 0
+}</code></pre>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- URL with Embedded Action Buttons -->
+                                <div class="uk-card-footer">
+                                    <div class="uk-inline uk-width-1-1">
+                                        <button class="uk-form-icon" uk-icon="icon: forward" uk-tooltip="Open in new tab" onclick="window.open('https://wsrv.nl/?url=https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg&amp;w=1000&amp;h=600', '_blank')"></button>
+                                        <input class="uk-input uk-form-small" type="text" value="https://wsrv.nl/?url=https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg&amp;w=1000&amp;h=600" readonly style="padding-left: 40px; padding-right: 40px;">
+                                        <button class="uk-form-icon uk-form-icon-flip" uk-icon="icon: copy" onclick="copyToClipboard(this.previousElementSibling); return false;" uk-tooltip="Copy URL"></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                </div>
+            </div>
+            <div class="uk-card uk-card-default section-card-default uk-card-body uk-margin-bottom" >
+                <h2 class="uk-card-title">Resize and Grayscale</h2>
+                <p class="uk-text-meta">Convert image to grayscale</p>
+
+                <div class="uk-margin">
+                    <pre><code class="language-python">image.resize(1000, 600).grayscale()</code></pre>
+                </div>
+
+                <div uk-lightbox="nav: thumbnav; slidenav: false" class="uk-child-width-1-1 uk-child-width-1-2@s uk-child-width-1-3@m uk-grid-match uk-margin-medium-top" uk-grid >
+                    <!-- Backend Results -->
+                        <div>
+                            <div class="uk-card uk-card-default uk-card-small uk-card-media-top ">
+                                    <div class="uk-card-badge uk-label card-backend-label">
+                                    Imagor
+                                    </div>
+                                <!-- Toggle between Image and Metadata -->
+                                <div class="uk-margin-remove ">
+                                    <div class="uk-height-small uk-position-relative " style="min-height: 260px;">
+                                        <!-- Toggle Button with background -->
+                                        <button class="uk-button uk-button-default uk-button-small"
+                                                onclick="toggleView(this)"
+                                                type="button"
+                                                uk-tooltip="View metadata"
+                                                data-showing="image"
+                                                style="position: absolute; top: 10px; right: 10px; z-index: 10; background-color: rgba(255, 255, 255, 0.9); border-radius: 50%; width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; border: 1px solid var(--card-border, #e5e5e5);">
+                                            <span uk-icon="icon: code; ratio: 0.7"></span>
+                                        </button>
+
+                                        <!-- Image View -->
+                                        <div class="view-container" data-view="image">
+                                            <div class="uk-height-small" data-view="image">
+                                                    <a class="uk-inline" href="http://localhost:8018/6RosRKVC-TS8NFNmWftMA58WLqZiGaEtebXOzmZjXE4=/fit-in/1000x600/filters:grayscale()/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" data-type="image" data-caption="<strong class='uk-label backend-label'>Imagor</strong><br /><a href='http://localhost:8018/6RosRKVC-TS8NFNmWftMA58WLqZiGaEtebXOzmZjXE4=/fit-in/1000x600/filters:grayscale()/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg' target='_blank' rel='noopener' uk-icon='icon: link'>6RosRKVC-TS8NFNmWftMA58WLqZiGaEtebXOzmZjXE4=/fit-in/1000x600/filters:grayscale()/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg</a><br /><small>Resize and Grayscale</small>">
+                                                        <img src="http://localhost:8018/6RosRKVC-TS8NFNmWftMA58WLqZiGaEtebXOzmZjXE4=/fit-in/1000x600/filters:grayscale()/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" alt="Imagor result" style="max-height: 220px; max-width: 100%; object-fit: contain;">
+                                                    </a>
+                                            </div>
+                                        </div>
+                                        <!-- Metadata View -->
+                                        <div class="view-container" data-view="metadata" hidden>
+                                            <div class="uk-height-small">
+                                                    <pre class="uk-margin-remove"><code class="language-json" style="font-size: 0.8rem; line-height: 1.2; white-space: pre-wrap;">{
+  &#34;format&#34;: &#34;jpeg&#34;,
+  &#34;content_type&#34;: &#34;image/jpeg&#34;,
+  &#34;width&#34;: 487,
+  &#34;height&#34;: 600,
+  &#34;orientation&#34;: 0,
+  &#34;pages&#34;: 1,
+  &#34;bands&#34;: 1,
+  &#34;exif&#34;: {}
+}</code></pre>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- URL with Embedded Action Buttons -->
+                                <div class="uk-card-footer">
+                                    <div class="uk-inline uk-width-1-1">
+                                        <button class="uk-form-icon" uk-icon="icon: forward" uk-tooltip="Open in new tab" onclick="window.open('http://localhost:8018/6RosRKVC-TS8NFNmWftMA58WLqZiGaEtebXOzmZjXE4=/fit-in/1000x600/filters:grayscale()/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg', '_blank')"></button>
+                                        <input class="uk-input uk-form-small" type="text" value="http://localhost:8018/6RosRKVC-TS8NFNmWftMA58WLqZiGaEtebXOzmZjXE4=/fit-in/1000x600/filters:grayscale()/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" readonly style="padding-left: 40px; padding-right: 40px;">
+                                        <button class="uk-form-icon uk-form-icon-flip" uk-icon="icon: copy" onclick="copyToClipboard(this.previousElementSibling); return false;" uk-tooltip="Copy URL"></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="uk-card uk-card-default uk-card-small uk-card-media-top ">
+                                    <div class="uk-card-badge uk-label card-backend-label">
+                                    Thumbor
+                                    </div>
+                                <!-- Toggle between Image and Metadata -->
+                                <div class="uk-margin-remove ">
+                                    <div class="uk-height-small uk-position-relative " style="min-height: 260px;">
+                                        <!-- Toggle Button with background -->
+                                        <button class="uk-button uk-button-default uk-button-small"
+                                                onclick="toggleView(this)"
+                                                type="button"
+                                                uk-tooltip="View metadata"
+                                                data-showing="image"
+                                                style="position: absolute; top: 10px; right: 10px; z-index: 10; background-color: rgba(255, 255, 255, 0.9); border-radius: 50%; width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; border: 1px solid var(--card-border, #e5e5e5);">
+                                            <span uk-icon="icon: code; ratio: 0.7"></span>
+                                        </button>
+
+                                        <!-- Image View -->
+                                        <div class="view-container" data-view="image">
+                                            <div class="uk-height-small" data-view="image">
+                                                    <a class="uk-inline" href="http://localhost:8019/FDhLmgGphCT_nia8muNcPB-BVS8=/fit-in/1000x600/filters:grayscale()/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" data-type="image" data-caption="<strong class='uk-label backend-label'>Thumbor</strong><br /><a href='http://localhost:8019/FDhLmgGphCT_nia8muNcPB-BVS8=/fit-in/1000x600/filters:grayscale()/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg' target='_blank' rel='noopener' uk-icon='icon: link'>FDhLmgGphCT_nia8muNcPB-BVS8=/fit-in/1000x600/filters:grayscale()/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg</a><br /><small>Resize and Grayscale</small>">
+                                                        <img src="http://localhost:8019/FDhLmgGphCT_nia8muNcPB-BVS8=/fit-in/1000x600/filters:grayscale()/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" alt="Thumbor result" style="max-height: 220px; max-width: 100%; object-fit: contain;">
+                                                    </a>
+                                            </div>
+                                        </div>
+                                        <!-- Metadata View -->
+                                        <div class="view-container" data-view="metadata" hidden>
+                                            <div class="uk-height-small">
+                                                    <pre class="uk-margin-remove"><code class="language-json" style="font-size: 0.8rem; line-height: 1.2; white-space: pre-wrap;">{
+  &#34;thumbor&#34;: {
+    &#34;source&#34;: {
+      &#34;url&#34;: &#34;https%3A//wsrv.nl/lichtenstein.jpg&#34;,
+      &#34;width&#34;: 487,
+      &#34;height&#34;: 600,
+      &#34;frameCount&#34;: 1
+    },
+    &#34;operations&#34;: [
+      {
+        &#34;type&#34;: &#34;resize&#34;,
+        &#34;width&#34;: 487,
+        &#34;height&#34;: 600.0
+      }
+    ],
+    &#34;target&#34;: {
+      &#34;width&#34;: 487,
+      &#34;height&#34;: 600.0
+    },
+    &#34;focal_points&#34;: [
+      {
+        &#34;x&#34;: 983,
+        &#34;y&#34;: 1210,
+        &#34;z&#34;: 1.0,
+        &#34;height&#34;: 1,
+        &#34;width&#34;: 1,
+        &#34;origin&#34;: &#34;alignment&#34;
+      }
+    ]
+  }
+}</code></pre>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- URL with Embedded Action Buttons -->
+                                <div class="uk-card-footer">
+                                    <div class="uk-inline uk-width-1-1">
+                                        <button class="uk-form-icon" uk-icon="icon: forward" uk-tooltip="Open in new tab" onclick="window.open('http://localhost:8019/FDhLmgGphCT_nia8muNcPB-BVS8=/fit-in/1000x600/filters:grayscale()/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg', '_blank')"></button>
+                                        <input class="uk-input uk-form-small" type="text" value="http://localhost:8019/FDhLmgGphCT_nia8muNcPB-BVS8=/fit-in/1000x600/filters:grayscale()/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" readonly style="padding-left: 40px; padding-right: 40px;">
+                                        <button class="uk-form-icon uk-form-icon-flip" uk-icon="icon: copy" onclick="copyToClipboard(this.previousElementSibling); return false;" uk-tooltip="Copy URL"></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="uk-card uk-card-danger uk-card-body">
+                                <h3 class="uk-card-title">WsrvNl</h3>
+                                <p class="uk-text-danger">Error: &#39;WsrvNl&#39; object has no attribute &#39;grayscale&#39;</p>
+                                <details class="uk-margin-top">
+                                    <summary>Show traceback</summary>
+                                    <pre class="uk-margin-remove"><code class="language-python">Traceback (most recent call last):
+  File &#34;/home/tobias/pymagor/examples/compare_backends_advanced.py&#34;, line 190, in _run_transform
+    method = getattr(current, step.name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: &#39;WsrvNl&#39; object has no attribute &#39;grayscale&#39;
+</code></pre>
+                                </details>
+                            </div>
+                        </div>
+                </div>
+            </div>
+            <div class="uk-card uk-card-default section-card-default uk-card-body uk-margin-bottom" >
+                <h2 class="uk-card-title">Resize, Blur, Quality and Round Corner</h2>
+                <p class="uk-text-meta">Resize, convert to grayscale, and set quality</p>
+
+                <div class="uk-margin">
+                    <pre><code class="language-python">image.resize(1000, 600).blur(radius=5).quality(85).round_corner(40)</code></pre>
+                </div>
+
+                <div uk-lightbox="nav: thumbnav; slidenav: false" class="uk-child-width-1-1 uk-child-width-1-2@s uk-child-width-1-3@m uk-grid-match uk-margin-medium-top" uk-grid >
+                    <!-- Backend Results -->
+                        <div>
+                            <div class="uk-card uk-card-default uk-card-small uk-card-media-top ">
+                                    <div class="uk-card-badge uk-label card-backend-label">
+                                    Imagor
+                                    </div>
+                                <!-- Toggle between Image and Metadata -->
+                                <div class="uk-margin-remove ">
+                                    <div class="uk-height-small uk-position-relative " style="min-height: 260px;">
+                                        <!-- Toggle Button with background -->
+                                        <button class="uk-button uk-button-default uk-button-small"
+                                                onclick="toggleView(this)"
+                                                type="button"
+                                                uk-tooltip="View metadata"
+                                                data-showing="image"
+                                                style="position: absolute; top: 10px; right: 10px; z-index: 10; background-color: rgba(255, 255, 255, 0.9); border-radius: 50%; width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; border: 1px solid var(--card-border, #e5e5e5);">
+                                            <span uk-icon="icon: code; ratio: 0.7"></span>
+                                        </button>
+
+                                        <!-- Image View -->
+                                        <div class="view-container" data-view="image">
+                                            <div class="uk-height-small" data-view="image">
+                                                    <a class="uk-inline" href="http://localhost:8018/UhSZn5T3FNDK21ko27Lq3OqqQXuGZqN4uH9ntk3UPlM=/fit-in/1000x600/filters:blur(5):quality(85):round_corner(40,40,000000)/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" data-type="image" data-caption="<strong class='uk-label backend-label'>Imagor</strong><br /><a href='http://localhost:8018/UhSZn5T3FNDK21ko27Lq3OqqQXuGZqN4uH9ntk3UPlM=/fit-in/1000x600/filters:blur(5):quality(85):round_corner(40,40,000000)/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg' target='_blank' rel='noopener' uk-icon='icon: link'>UhSZn5T3FNDK21ko27Lq3OqqQXuGZqN4uH9ntk3UPlM=/fit-in/1000x600/filters:blur(5):quality(85):round_corner(40,40,000000)/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg</a><br /><small>Resize, Blur, Quality and Round Corner</small>">
+                                                        <img src="http://localhost:8018/UhSZn5T3FNDK21ko27Lq3OqqQXuGZqN4uH9ntk3UPlM=/fit-in/1000x600/filters:blur(5):quality(85):round_corner(40,40,000000)/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" alt="Imagor result" style="max-height: 220px; max-width: 100%; object-fit: contain;">
+                                                    </a>
+                                            </div>
+                                        </div>
+                                        <!-- Metadata View -->
+                                        <div class="view-container" data-view="metadata" hidden>
+                                            <div class="uk-height-small">
+                                                    <pre class="uk-margin-remove"><code class="language-json" style="font-size: 0.8rem; line-height: 1.2; white-space: pre-wrap;">{
+  &#34;format&#34;: &#34;jpeg&#34;,
+  &#34;content_type&#34;: &#34;image/jpeg&#34;,
+  &#34;width&#34;: 487,
+  &#34;height&#34;: 600,
+  &#34;orientation&#34;: 0,
+  &#34;pages&#34;: 1,
+  &#34;bands&#34;: 3,
+  &#34;exif&#34;: {}
+}</code></pre>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- URL with Embedded Action Buttons -->
+                                <div class="uk-card-footer">
+                                    <div class="uk-inline uk-width-1-1">
+                                        <button class="uk-form-icon" uk-icon="icon: forward" uk-tooltip="Open in new tab" onclick="window.open('http://localhost:8018/UhSZn5T3FNDK21ko27Lq3OqqQXuGZqN4uH9ntk3UPlM=/fit-in/1000x600/filters:blur(5):quality(85):round_corner(40,40,000000)/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg', '_blank')"></button>
+                                        <input class="uk-input uk-form-small" type="text" value="http://localhost:8018/UhSZn5T3FNDK21ko27Lq3OqqQXuGZqN4uH9ntk3UPlM=/fit-in/1000x600/filters:blur(5):quality(85):round_corner(40,40,000000)/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" readonly style="padding-left: 40px; padding-right: 40px;">
+                                        <button class="uk-form-icon uk-form-icon-flip" uk-icon="icon: copy" onclick="copyToClipboard(this.previousElementSibling); return false;" uk-tooltip="Copy URL"></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="uk-card uk-card-default uk-card-small uk-card-media-top ">
+                                    <div class="uk-card-badge uk-label card-backend-label">
+                                    Thumbor
+                                    </div>
+                                <!-- Toggle between Image and Metadata -->
+                                <div class="uk-margin-remove ">
+                                    <div class="uk-height-small uk-position-relative " style="min-height: 260px;">
+                                        <!-- Toggle Button with background -->
+                                        <button class="uk-button uk-button-default uk-button-small"
+                                                onclick="toggleView(this)"
+                                                type="button"
+                                                uk-tooltip="View metadata"
+                                                data-showing="image"
+                                                style="position: absolute; top: 10px; right: 10px; z-index: 10; background-color: rgba(255, 255, 255, 0.9); border-radius: 50%; width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; border: 1px solid var(--card-border, #e5e5e5);">
+                                            <span uk-icon="icon: code; ratio: 0.7"></span>
+                                        </button>
+
+                                        <!-- Image View -->
+                                        <div class="view-container" data-view="image">
+                                            <div class="uk-height-small" data-view="image">
+                                                    <a class="uk-inline" href="http://localhost:8019/-ow-a4vB17raP3tecKEyxxmD9Fc=/fit-in/1000x600/filters:blur(5):quality(85):round_corner(40,255,255,255,1)/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" data-type="image" data-caption="<strong class='uk-label backend-label'>Thumbor</strong><br /><a href='http://localhost:8019/-ow-a4vB17raP3tecKEyxxmD9Fc=/fit-in/1000x600/filters:blur(5):quality(85):round_corner(40,255,255,255,1)/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg' target='_blank' rel='noopener' uk-icon='icon: link'>-ow-a4vB17raP3tecKEyxxmD9Fc=/fit-in/1000x600/filters:blur(5):quality(85):round_corner(40,255,255,255,1)/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg</a><br /><small>Resize, Blur, Quality and Round Corner</small>">
+                                                        <img src="http://localhost:8019/-ow-a4vB17raP3tecKEyxxmD9Fc=/fit-in/1000x600/filters:blur(5):quality(85):round_corner(40,255,255,255,1)/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" alt="Thumbor result" style="max-height: 220px; max-width: 100%; object-fit: contain;">
+                                                    </a>
+                                            </div>
+                                        </div>
+                                        <!-- Metadata View -->
+                                        <div class="view-container" data-view="metadata" hidden>
+                                            <div class="uk-height-small">
+                                                    <pre class="uk-margin-remove"><code class="language-json" style="font-size: 0.8rem; line-height: 1.2; white-space: pre-wrap;">{
+  &#34;thumbor&#34;: {
+    &#34;source&#34;: {
+      &#34;url&#34;: &#34;https%3A//wsrv.nl/lichtenstein.jpg&#34;,
+      &#34;width&#34;: 487,
+      &#34;height&#34;: 600,
+      &#34;frameCount&#34;: 1
+    },
+    &#34;operations&#34;: [
+      {
+        &#34;type&#34;: &#34;resize&#34;,
+        &#34;width&#34;: 487,
+        &#34;height&#34;: 600.0
+      }
+    ],
+    &#34;target&#34;: {
+      &#34;width&#34;: 487,
+      &#34;height&#34;: 600.0
+    },
+    &#34;focal_points&#34;: [
+      {
+        &#34;x&#34;: 983,
+        &#34;y&#34;: 1210,
+        &#34;z&#34;: 1.0,
+        &#34;height&#34;: 1,
+        &#34;width&#34;: 1,
+        &#34;origin&#34;: &#34;alignment&#34;
+      }
+    ]
+  }
+}</code></pre>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- URL with Embedded Action Buttons -->
+                                <div class="uk-card-footer">
+                                    <div class="uk-inline uk-width-1-1">
+                                        <button class="uk-form-icon" uk-icon="icon: forward" uk-tooltip="Open in new tab" onclick="window.open('http://localhost:8019/-ow-a4vB17raP3tecKEyxxmD9Fc=/fit-in/1000x600/filters:blur(5):quality(85):round_corner(40,255,255,255,1)/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg', '_blank')"></button>
+                                        <input class="uk-input uk-form-small" type="text" value="http://localhost:8019/-ow-a4vB17raP3tecKEyxxmD9Fc=/fit-in/1000x600/filters:blur(5):quality(85):round_corner(40,255,255,255,1)/https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg" readonly style="padding-left: 40px; padding-right: 40px;">
+                                        <button class="uk-form-icon uk-form-icon-flip" uk-icon="icon: copy" onclick="copyToClipboard(this.previousElementSibling); return false;" uk-tooltip="Copy URL"></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="uk-card uk-card-default uk-card-small uk-card-media-top ">
+                                    <div class="uk-card-badge uk-label card-backend-label">
+                                    WsrvNl
+                                    </div>
+                                <!-- Toggle between Image and Metadata -->
+                                <div class="uk-margin-remove ">
+                                    <div class="uk-height-small uk-position-relative " style="min-height: 260px;">
+                                        <!-- Toggle Button with background -->
+                                        <button class="uk-button uk-button-default uk-button-small"
+                                                onclick="toggleView(this)"
+                                                type="button"
+                                                uk-tooltip="View metadata"
+                                                data-showing="image"
+                                                style="position: absolute; top: 10px; right: 10px; z-index: 10; background-color: rgba(255, 255, 255, 0.9); border-radius: 50%; width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; border: 1px solid var(--card-border, #e5e5e5);">
+                                            <span uk-icon="icon: code; ratio: 0.7"></span>
+                                        </button>
+
+                                        <!-- Image View -->
+                                        <div class="view-container" data-view="image">
+                                            <div class="uk-height-small" data-view="image">
+                                                    <a class="uk-inline" href="https://wsrv.nl/?url=https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg&amp;w=1000&amp;h=600&amp;blur=3.50&amp;quality=85" data-type="image" data-caption="<strong class='uk-label backend-label'>WsrvNl</strong><br /><a href='https://wsrv.nl/?url=https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg&amp;w=1000&amp;h=600&amp;blur=3.50&amp;quality=85' target='_blank' rel='noopener' uk-icon='icon: link'>?url=https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg&amp;w=1000&amp;h=600&amp;blur=3.50&amp;quality=85</a><br /><small>Resize, Blur, Quality and Round Corner</small>">
+                                                        <img src="https://wsrv.nl/?url=https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg&amp;w=1000&amp;h=600&amp;blur=3.50&amp;quality=85" alt="WsrvNl result" style="max-height: 220px; max-width: 100%; object-fit: contain;">
+                                                    </a>
+                                            </div>
+                                        </div>
+                                        <!-- Metadata View -->
+                                        <div class="view-container" data-view="metadata" hidden>
+                                            <div class="uk-height-small">
+                                                    <pre class="uk-margin-remove"><code class="language-json" style="font-size: 0.8rem; line-height: 1.2; white-space: pre-wrap;">{
+  &#34;format&#34;: &#34;jpeg&#34;,
+  &#34;width&#34;: 487,
+  &#34;height&#34;: 600,
+  &#34;space&#34;: &#34;srgb&#34;,
+  &#34;channels&#34;: 3,
+  &#34;depth&#34;: &#34;uchar&#34;,
+  &#34;density&#34;: 71,
+  &#34;chromaSubsampling&#34;: &#34;4:2:0&#34;,
+  &#34;isProgressive&#34;: false,
+  &#34;isPalette&#34;: false,
+  &#34;hasProfile&#34;: false,
+  &#34;hasAlpha&#34;: false,
+  &#34;orientation&#34;: 0
+}</code></pre>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- URL with Embedded Action Buttons -->
+                                <div class="uk-card-footer">
+                                    <div class="uk-inline uk-width-1-1">
+                                        <button class="uk-form-icon" uk-icon="icon: forward" uk-tooltip="Open in new tab" onclick="window.open('https://wsrv.nl/?url=https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg&amp;w=1000&amp;h=600&amp;blur=3.50&amp;quality=85', '_blank')"></button>
+                                        <input class="uk-input uk-form-small" type="text" value="https://wsrv.nl/?url=https%3A%2F%2Fwsrv.nl%2Flichtenstein.jpg&amp;w=1000&amp;h=600&amp;blur=3.50&amp;quality=85" readonly style="padding-left: 40px; padding-right: 40px;">
+                                        <button class="uk-form-icon uk-form-icon-flip" uk-icon="icon: copy" onclick="copyToClipboard(this.previousElementSibling); return false;" uk-tooltip="Copy URL"></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Theme toggle functionality
+        function toggleTheme(theme = 'auto') {
+            const container = document.querySelector('body');
+            const currentTheme = container.getAttribute('data-theme');
+            const newTheme = theme === 'auto' ? (currentTheme === 'dark' ? 'light' : 'dark') : theme;
+
+            // Update theme attribute
+            container.setAttribute('data-theme', newTheme);
+
+            // Update UI elements
+            if (newTheme === 'dark') {
+                document.getElementById('themeIcon').setAttribute('uk-icon', 'icon: sun');
+                document.getElementById('prism-theme-dark').media = 'all';
+                document.getElementById('prism-theme-light').media = 'not all';
+            } else {
+                document.getElementById('themeIcon').setAttribute('uk-icon', 'icon: paint-bucket');
+                document.getElementById('prism-theme-light').media = 'all';
+                document.getElementById('prism-theme-dark').media = 'not all';
+            }
+
+            // Save preference
+            localStorage.setItem('theme', newTheme);
+            document.getElementById('themeState').value = newTheme;
+
+            // Force UIkit to update components
+            if (typeof UIkit !== 'undefined') {
+                UIkit.update(null, 'update');
+            }
+
+            // Update Prism if available
+            if (window.Prism) {
+                Prism.highlightAll();
+            }
+        }
+
+        // Copy to clipboard function
+        function copyToClipboard(element) {
+            element.select();
+            document.execCommand('copy');
+
+            // Show notification
+            const notification = UIkit.notification({
+                message: 'URL copied to clipboard!',
+                status: 'success',
+                pos: 'bottom-center',
+                timeout: 2000
+            });
+        }
+        function toggleView(button) {
+            const container = button.closest('.uk-position-relative');
+            const currentView = button.getAttribute('data-showing');
+            const newView = currentView === 'image' ? 'metadata' : 'image';
+
+            // Toggle visibility
+            container.querySelector(`[data-view="${currentView}"]`).hidden = true;
+            container.querySelector(`[data-view="${newView}"]`).hidden = false;
+
+            // Update button
+            button.setAttribute('data-showing', newView);
+            button.setAttribute('uk-tooltip', `View ${currentView}`);
+
+            // Update icon based on the new view
+            const icon = button.querySelector('span');
+            if (newView === 'metadata') {
+                icon.setAttribute('uk-icon', 'icon: image');
+                button.style.backgroundColor = 'rgba(0, 0, 0, 0.1)';
+            } else {
+                icon.setAttribute('uk-icon', 'icon: code');
+                button.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+            }
+
+            UIkit.update();
+        }
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set initial theme
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            toggleTheme(savedTheme);
+        });
+    </script>
+    <!-- Fixed theme toggle button -->
+    <div class="uk-position-fixed uk-position-top-right uk-margin-top uk-margin-right" style="z-index: 1000;">
+        <button class="uk-button theme-toggle-button uk-button-default uk-border-circle" onclick="toggleTheme()" title="Toggle dark/light mode" style="width: 50px; height: 50px; padding: 0; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <span id="themeIcon" uk-icon="icon: paint-bucket; ratio: 1.2"></span>
+        </button>
+    </div>
+</body>
+</html>

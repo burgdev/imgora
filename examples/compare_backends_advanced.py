@@ -56,9 +56,10 @@ class TransformResult:
     """Result of a transformation operation."""
 
     success: bool
-    url: Optional[str]
     method_calls: List[str]
     meta: Dict[str, Any]
+    url: Optional[str] = None
+    path: Optional[str] = None
     error: Optional[str] = None
     traceback: Optional[str] = None
 
@@ -218,20 +219,23 @@ class ImageComparator:
             if not url:
                 return TransformResult(
                     success=False,
-                    url=None,
                     method_calls=method_calls,
                     meta=meta,
                     error="Failed to generate URL after transformations",
                 )
 
             return TransformResult(
-                success=True, url=url, method_calls=method_calls, meta=meta, error=None
+                success=True,
+                url=url,
+                method_calls=method_calls,
+                meta=meta,
+                error=None,
+                path=current.path(),
             )
 
         except Exception as e:
             return TransformResult(
                 success=False,
-                url=None,
                 method_calls=method_calls if "method_calls" in locals() else [],
                 meta={},
                 error=str(e),
@@ -320,10 +324,27 @@ class ImageComparator:
         # Convert results to list for template
         transformations_list = list(results.values())
 
+        # Get source image dimensions if available
+        source_size = None
+        try:
+            # Try to get image dimensions using Pillow
+            from io import BytesIO
+
+            import requests
+            from PIL import Image
+
+            response = requests.get(self.source_url)
+            img = Image.open(BytesIO(response.content))
+            source_size = img.size  # Returns (width, height)
+        except Exception:
+            # If we can't get dimensions, just use None
+            pass
+
         # Render the template
-        template = self.env.get_template("comparison.html")
+        template = self.env.get_template("comparison_new.html")
         output = template.render(
             source_url=self.source_url,
+            source_size=source_size,
             transformations=transformations_list,
             timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         )
@@ -400,7 +421,6 @@ def create_sample_comparison():
             Operation("quality", 85),
             Operation("round_corner", 40),
         ],
-        # name="Combined Transformations",
         description="Resize, convert to grayscale, and set quality",
     )
 

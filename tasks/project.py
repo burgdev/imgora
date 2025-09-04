@@ -26,7 +26,7 @@ def update_venv(c: Ctx, dry: bool = False):
 def install(c: Ctx, venv_update: bool = True):
     """Install the uv environment and install the pre-commit hooks"""
     echo("🚀 Creating virtual environment using uv and install pre-commit hooks")
-    c.run("uv sync")
+    c.run("uv sync --all-groups")
     c.run("uv run pre-commit install")
     if venv_update:
         update_venv(c)
