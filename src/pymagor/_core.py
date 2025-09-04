@@ -159,7 +159,7 @@ class BaseImage(ABC):
             self._operations = [a for a in self._operations if a.name != op.name]
         self._operations.append(op)
 
-    def add_filter(self, filter: str | Filter, unique: bool = True, *args: Any) -> None:
+    def add_filter(self, filter: str | Filter, *args: Any, unique: bool = True) -> None:
         """Add a filter to the image processing pipeline.
 
         Args:

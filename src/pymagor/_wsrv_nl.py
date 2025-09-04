@@ -30,7 +30,8 @@ class WsrvNl(BaseImage):
         filters = self._filters
         if filters:
             filters_query = "&" + "&".join(
-                f"{f.name}={f.args[0]}" if len(f.args) == 1 else f.name for f in filters
+                f"{f.name}={','.join(map(str, f.args))}" if len(f.args) >= 1 else f.name
+                for f in filters
             )
         else:
             filters_query = ""

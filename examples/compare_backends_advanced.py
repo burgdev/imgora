@@ -13,55 +13,42 @@ import webbrowser
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, Dict, List, Optional
 
 import requests
 from jinja2 import Environment, FileSystemLoader
 
 # Import backends
-from pymagor import Imagor, Signer, Thumbor, WsrvNl
+from pymagor import BaseImage, Imagor, Signer, Thumbor, WsrvNl
 
 # Configure Jinja2 environment
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 TEMPLATES_DIR.mkdir(exist_ok=True)
 
 
-@dataclass
-class MethodCall:
-    """Represents a single method call with its arguments."""
-
-    method_name: str
-    args: List[Any] = field(default_factory=list)
-    kwargs: Dict[str, Any] = field(default_factory=dict)
+class Operation:
+    def __init__(
+        self,
+        name: str,
+        *args: tuple[any],
+        title: str | None = None,
+        description: str = "",
+        **kwargs: dict[str, any],
+    ):
+        self.name = name
+        self.args = args
+        self.kwargs = kwargs
+        self.title = title or name.replace("_", " ").title()
+        self.description = description
 
     def __str__(self) -> str:
         args_str = ", ".join(repr(arg) for arg in self.args)
         kwargs_str = ", ".join(f"{k}={repr(v)}" for k, v in self.kwargs.items())
         all_args = ", ".join(filter(None, [args_str, kwargs_str]))
-        return f".{self.method_name}({all_args})"
+        return f".{self.name}({all_args})"
 
     def __repr__(self) -> str:
-        return f"<MethodCall {self}>"
-
-
-@dataclass
-class Chain:
-    """Represents a chain of method calls."""
-
-    steps: List[MethodCall] = field(default_factory=list)
-    name: str = ""
-    description: str = ""
-
-    def __str__(self) -> str:
-        """Convert the chain to a string of chained method calls."""
-        if not self.steps:
-            return ""
-
-        # Join all steps with newlines
-        return "".join(str(step) for step in self.steps)
-
-    def __repr__(self) -> str:
-        return f"<Chain {self}>"
+        return f"<Operation {self}>"
 
 
 @dataclass
@@ -78,6 +65,42 @@ class TransformResult:
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for template rendering."""
         return asdict(self)
+
+
+@dataclass
+class Transformation:
+    name: Optional[str] = field(default=None, repr=False)  # temporary input
+    description: str = ""
+    operations: List[Operation] = field(default_factory=list)
+
+    # Internal field to hold the actual name
+    _name: Optional[str] = field(init=False, default=None, repr=False)
+
+    def __post_init__(self):
+        # Move the user-provided name into the hidden field
+        self._name = self.name
+        self.name = None  # avoid confusion — we'll always go through the property
+
+    @property
+    def name(self) -> str:  # type: ignore  # noqa: F811
+        """Return explicit name if set, otherwise generate from operations."""
+        if self._name:
+            return self._name
+        titles = [op.title for op in self.operations]
+        return self._human_join(titles) if titles else ""
+
+    @name.setter
+    def name(self, value: Optional[str]) -> None:
+        self._name = value
+
+    @staticmethod
+    def _human_join(values: List[str]) -> str:
+        """Join values as 'A, B and C' instead of 'A, B, C'."""
+        if not values:
+            return ""
+        if len(values) == 1:
+            return values[0]
+        return ", ".join(values[:-1]) + " and " + values[-1]
 
 
 class ImageComparator:
@@ -101,8 +124,8 @@ class ImageComparator:
 
         self.source_url = source_url
         self.output_file = output_file
-        self.backends = []
-        self.transformations = []
+        self.backends: list[BaseImage] = []
+        self.transformations: list[Transformation] = []
 
         # Ensure output directory exists
         output_dir = os.path.dirname(os.path.abspath(self.output_file))
@@ -110,7 +133,7 @@ class ImageComparator:
             os.makedirs(output_dir, exist_ok=True)
 
     def add_backend(
-        self, name: str, backend_class: Type, **kwargs
+        self, name: str, backend_class: BaseImage, **kwargs
     ) -> "ImageComparator":
         """
         Add a backend to compare.
@@ -128,38 +151,36 @@ class ImageComparator:
 
     def add_transformation(
         self,
-        steps: List[Union[MethodCall, Chain]],
-        name: str = "",
+        operations: List[Operation],
+        name: str | None = None,
         description: str = "",
     ) -> "ImageComparator":
         """
         Add a transformation to apply to all backends.
 
         Args:
-            steps: List of MethodCall or Chain objects representing the transformation steps
+            operations: List of Operation objects representing the transformation steps
             name: Optional name for the transformation
             description: Optional description of what the transformation does
 
         Returns:
             self for method chaining
         """
-        if not name:
-            name = f"Transformation {len(self.transformations) + 1}"
-
+        name = name or ", ".join(step.title for step in operations)
         self.transformations.append(
-            {"name": name, "description": description, "steps": steps}
+            Transformation(name=name, description=description, operations=operations)
         )
         return self
 
     def _run_transform(
-        self, backend: Any, transform_steps: List[Union[MethodCall, Chain]]
+        self, backend: Any, transform_steps: List[Operation]
     ) -> TransformResult:
         """
         Apply a series of transformation steps to a backend.
 
         Args:
             backend: The backend instance to transform
-            transform_steps: List of MethodCall or Chain objects representing the transformations
+            transform_steps: List of Operation objects representing the transformations
 
         Returns:
             TransformResult: The result of the transformation
@@ -171,15 +192,9 @@ class ImageComparator:
 
             # Apply each step in the transformation
             for step in transform_steps:
-                if isinstance(step, Chain):  # It's a Chain
-                    for sub_step in step.steps:
-                        method = getattr(current, sub_step.method_name)
-                        current = method(*sub_step.args, **(sub_step.kwargs or {}))
-                        method_calls.append(str(sub_step))
-                else:  # It's a MethodCall
-                    method = getattr(current, step.method_name)
-                    current = method(*step.args, **(step.kwargs or {}))
-                    method_calls.append(str(step))
+                method = getattr(current, step.name)
+                current = method(*step.args, **(step.kwargs or {}))
+                method_calls.append(str(step))
 
             # Get the final URL from the transformed backend
             url = current.url()
@@ -236,7 +251,7 @@ class ImageComparator:
         results = {}
 
         def step_to_dict(step):
-            """Convert a step (MethodCall or Chain) to a string representation."""
+            """Convert a step (Operation) to a string representation."""
             # Directly format the method call as a string
             if hasattr(step, "method_name"):
                 args_str = ", ".join([repr(arg) for arg in step.args])
@@ -252,7 +267,7 @@ class ImageComparator:
         for transform in self.transformations:
             # Convert each step to its string representation
             step_strings = []
-            for step in transform["steps"]:
+            for step in transform.operations:
                 # Directly format the method call
                 if hasattr(step, "method_name"):
                     args_str = ", ".join([repr(arg) for arg in step.args])
@@ -268,9 +283,9 @@ class ImageComparator:
             # Join all steps into a single string
             all_steps = "".join(step_strings)
 
-            results[transform["name"]] = {
-                "name": transform["name"],
-                "description": transform["description"],
+            results[transform.name] = {
+                "name": transform.name,
+                "description": transform.description,
                 "steps": all_steps,  # Single string with all steps
                 "results": {},
             }
@@ -288,15 +303,15 @@ class ImageComparator:
 
                 # Run each transformation
                 for transform in self.transformations:
-                    transform_name = transform["name"]
-                    result = self._run_transform(backend, transform["steps"])
+                    transform_name = transform.name
+                    result = self._run_transform(backend, transform.operations)
                     results[transform_name]["results"][backend_name] = result
 
             except Exception as e:
                 print(f"Error initializing backend {backend_name}: {str(e)}")
                 # Add error to all transformations for this backend
                 for transform in self.transformations:
-                    results[transform["name"]]["results"][backend_name] = {
+                    results[transform.name]["results"][backend_name] = {
                         "success": False,
                         "error": str(e),
                         "traceback": traceback.format_exc(),
@@ -332,22 +347,6 @@ class ImageComparator:
         return str(output_path.absolute())
 
 
-class MethodCall:
-    def __init__(
-        self,
-        method_name: str,
-        args: tuple = (),
-        kwargs: dict = {},
-        name: str = "",
-        description: str = "",
-    ):
-        self.method_name = method_name
-        self.args = args
-        self.kwargs = kwargs
-        self.name = name
-        self.description = description
-
-
 def create_sample_comparison():
     """Create a sample comparison with common transformations."""
     # Example image URL (can be replaced with any public image URL)
@@ -378,29 +377,30 @@ def create_sample_comparison():
     # WsrvNl
     comparator.add_backend("WsrvNl", WsrvNl, base_url="https://wsrv.nl")
 
+    resize_step = Operation("resize", 1000, 600)
     # Add transformations
     # 1. Simple resize
     comparator.add_transformation(
-        steps=[MethodCall("resize", (400, 300), name="Resize")],
-        name="Simple Resize",
-        description="Basic image resizing to 400x300 pixels",
+        operations=[resize_step],
+        description=f"Basic image resizing to {resize_step.args[0]}x{resize_step.args[1]} pixels",
     )
 
     # 2. Grayscale
     comparator.add_transformation(
-        steps=[MethodCall("grayscale", name="Grayscale")],
-        name="Grayscale",
+        operations=[resize_step, Operation("grayscale")],
+        name="Graysacle",
         description="Convert image to grayscale",
     )
 
     # 3. Multiple transformations
     comparator.add_transformation(
-        steps=[
-            MethodCall("resize", (400, 300), name="Resize"),
-            MethodCall("grayscale", name="Grayscale"),
-            MethodCall("quality", (85,), name="Quality"),
+        operations=[
+            resize_step,
+            Operation("blur", radius=5),
+            Operation("quality", 85),
+            Operation("round_corner", 40),
         ],
-        name="Combined Transformations",
+        # name="Combined Transformations",
         description="Resize, convert to grayscale, and set quality",
     )
 

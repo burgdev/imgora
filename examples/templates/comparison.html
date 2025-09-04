@@ -48,12 +48,6 @@
             flex-direction: column;
         }
 
-        .card header {
-            padding: 0;
-            margin-bottom: 1rem;
-            border-bottom: 1px solid var(--card-border);
-            padding-bottom: 0.75rem;
-        }
 
         .card h3, .card h4 {
             margin: 0 0 0.5rem 0;
@@ -220,50 +214,12 @@
                 <code>image = Image(image=source_url){{ transform.steps|e }}</code>
             </div>
 
-            <!--<details open>
-                <summary>Source Code</summary>
-                <div class="code-block">
-                    <div class="code-header">
-                        <div class="code-toolbar" style="margin-bottom: 1.5rem;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
-                                <small style="opacity: 0.7;">Transformation</small>
-                                <button class="copy-button" onclick="copyToClipboard(this.parentElement.nextElementSibling)"
-                                        style="background: none; border: 1px solid var(--card-border); cursor: pointer; padding: 0.25rem 0.5rem; font-size: 0.8rem; border-radius: 4px; color: var(--muted-color);">
-                                    📋 Copy
-                                </button>
-                            </div>
-                            <pre class="line-numbers" style="margin: 0;">
-                                <code class="language-python"># {{ transform.name }}
-{{ transform.steps|join('\n') }}</code>
-                            </pre>
-                        </div>
-                        <div class="code-toolbar">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
-                                <small style="opacity: 0.7;">Full Code</small>
-                                <button class="copy-button" onclick="copyToClipboard(this.parentElement.nextElementSibling)"
-                                        style="background: none; border: 1px solid var(--card-border); cursor: pointer; padding: 0.25rem 0.5rem; font-size: 0.8rem; border-radius: 4px; color: var(--muted-color);">
-                                    📋 Copy
-                                </button>
-                            </div>
-                            <pre class="line-numbers" style="margin: 0;">
-                                <code class="language-python">from pymagor import Imagor  # or Thumbor, WsrvNl
-
-# {{ transform.name }}
-image = Imagor(image=source_url){{ transform.steps|e }}
-image.url()</code>
-                            </pre>
-                        </div>
-                    </div>
-                </div>
-            </details>-->
-
-            <h3>Results</h3>
             <div class="grid">
                 {% for backend_name, result in transform.results.items() %}
                 <div>
                     <div class="card">
                         <header>
-                            <h3>{{ backend_name }}</h3>
+                            <h5>{{ backend_name }}</h5>
                         </header>
                         <div style="flex: 1; display: flex; flex-direction: column;">
                             <div style="flex: 1; display: flex; align-items: top; justify-content: center; padding: 1rem 0;">
@@ -280,8 +236,8 @@ image.url()</code>
                             <div style="margin-top: auto;">
                                 {% if result.meta %}
                                 <details>
-                                    <summary>📊 Show Metadata</summary>
-                                    <div style="max-height: 300px; overflow-y: auto; margin-top: 0.5rem;">
+                                    <summary>Metadata</summary>
+                                    <div style="max-height: 300px; overflow-y: auto; margin-top: 0.5rem; font-size: 0.8rem;">
                                         <pre style="margin: 0;"><code class="language-json">{{ result.meta|tojson(indent=2) }}</code></pre>
                                     </div>
                                 </details>
@@ -308,12 +264,12 @@ image.url()</code>
                 <img id="modalImage" src="" alt="Preview" style="max-width: 100%; max-height: 100%; display: block; margin: 0 auto;">
             </div>
             <footer style="display: flex; justify-content: space-between; padding: 1rem; background: var(--card-hover);">
-                <a href="#" id="modalImageLink" target="_blank" role="button" class="secondary" style="text-decoration: none;">
+                <a href="#" id="modalImageLink" target="_blank" role="button" class="secondary outline" style="text-decoration: none;">
                     Open in New Tab
                 </a>
-                <button onclick="document.getElementById('imageModal').close()" class="secondary">
+                <!--<button onclick="document.getElementById('imageModal').close()" class="secondary">
                     Close
-                </button>
+                </button>-->
             </footer>
         </div>
     </dialog>
