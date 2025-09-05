@@ -31,6 +31,7 @@
         /* Base light theme */
         :root {
             --body-bg:rgb(232, 232, 232);
+            --body2-bg:rgb(194, 253, 208);
             --section-bg: #f8f8f8;
             --section-color: #333333;
             --card-bg: #ffffff;
@@ -45,8 +46,9 @@
 
         /* Dark theme overrides */
         [data-theme="dark"] {
-            --body-bg:rgb(27, 26, 26);
-            --section-bg:rgb(20, 20, 20);
+            --body-bg:rgb(30, 30, 30);
+            --body2-bg:rgb(16, 60, 26);
+            --section-bg:rgb(52, 52, 52);
             --section-color: #f8f8f8;
             --card-bg: #1e1e1e;
             --card-color: #f8f8f8;
@@ -60,7 +62,8 @@
 
         /* Ensure text colors are properly set */
         body {
-            background-color: var(--body-bg);
+            background: var(--body-bg);
+            background: linear-gradient(180deg, var(--body-bg) 0%, var(--body2-bg) 100%);
             color: var(--section-color);
         }
 
@@ -92,12 +95,25 @@
             border: 1px solid var(--border-color) !important;
         }
 
-
         .operation pre {
             margin: 0 !important;
             border-radius: 6px !important;
             padding: 5px !important;
             padding-left:15px !important;
+            position: relative;
+            overflow-x: auto;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        /* Thick right border with gradient */
+        .operation pre::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 7px; /* thickness of the border */
+            height: 100%;
+            background: var(--success-color);
         }
 
         .uk-card-default {
