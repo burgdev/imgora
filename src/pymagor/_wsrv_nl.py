@@ -134,7 +134,7 @@ class WsrvNl(BaseImage):
         """
         if angle is None:
             self.add_filter("ro")
-        self.add_filter("ro", angle)
+        self.add_filter("ro", -angle)
 
     @chain
     def background_color(self, color: str) -> Self:

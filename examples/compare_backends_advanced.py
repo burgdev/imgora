@@ -423,6 +423,20 @@ def create_sample_comparison():
         ],
         description="Resize, convert to grayscale, and set quality",
     )
+    comparator.add_transformation(
+        operations=[
+            resize_step,
+            Operation("crop", 50, 80, 20, 100),
+            Operation("trim"),
+        ],
+    )
+
+    comparator.add_transformation(
+        operations=[
+            resize_step,
+            Operation("rotate", 90),
+        ],
+    )
 
     # Run the comparison
     output_path = comparator.run()
