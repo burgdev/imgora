@@ -122,6 +122,16 @@
             border: 1px solid rgba(0,0,0,0.1);
         }
 
+        .sticky-header {
+            background-color: var(--card-bg);
+            border-bottom: 2px solid var(--border-color);
+            border-left: 2px solid var(--border-color);
+            border-right: 2px solid var(--border-color);
+            transition: background-color 1.4s ease-in-out;
+            /* color 1.5s, box-shadow 1.4s, border 1.4s; */
+            box-shadow: 0 5px 8px rgba(0,0,0,0.1);
+        }
+
         /* Ensure section background is properly set */
         .section-card-default {
             background-color: var(--section-bg) !important;
@@ -292,34 +302,54 @@
                         <h1 class="uk-h3 uk-margin-remove">Image Comparison</h1>
                         <div class="uk-text-meta">
                             Generated on {{ timestamp }}
-                            {% if source_size %}
-                            <br>Source: {{ source_size[0] }} × {{ source_size[1] }}px
-                            {% endif %}
                         </div>
                     </div>
                     <!-- Theme toggle button will be moved to fixed position -->
                     <input type="hidden" id="themeState" value="light">
                 </div>
-
-                {% if source_url %}
-                <div class="uk-margin-top">
-                    <div>
+                <!--; animation: uk-animation-fade -->
+                <div class="uk-padding-small" uk-sticky="top: 0; cls-active: sticky-header">
+                <ul class="uk-thumbnav" uk-switcher="connect: .switcher-container">
+                {% for result in results %}
+                        <li class="{{ 'uk-active' if loop.first else '' }}"><a href="">
+                                    <img src="{{ result.source_url }}" alt="Source Image" class="uk-border-rounded" style="max-height: 100px; width: auto;">
+                        </a></li>
+                {% endfor %}
+                </ul>
+                </div>
+                    <!--
+                {% for result in results %}
+                    {% set source_url = result.source_url %}
+                            {% if source_size %}
+                            <br>Source: {{ source_size[0] }} × {{ source_size[1] }}px
+                            {% endif %}
+                    {% if source_url %}
+                    <div class="uk-margin-top">
                         <div>
-                            <a class="uk-inline lightbox-item" href="{{ source_url }}" data-caption="<strong>Source Image</strong>">
-                                <img src="{{ source_url }}" alt="Source Image" class="uk-border-rounded" style="max-height: 150px; width: auto;">
-                            </a>
-                        </div>
-                        <div class="uk-margin-small-top">
-                            <a href="{{ source_url }}" class="uk-link-muted" target="_blank" rel="noopener" uk-icon="icon: link">
-                                <span class="uk-text-small">Original Image</span>
-                            </a>
+                            <div>
+                                <a class="uk-inline lightbox-item" href="{{ source_url }}" data-caption="<strong>Source Image</strong>">
+                                    <img src="{{ source_url }}" alt="Source Image" class="uk-border-rounded" style="max-height: 150px; width: auto;">
+                                </a>
+                            </div>
+                            <div class="uk-margin-small-top">
+                                <a href="{{ source_url }}" class="uk-link-muted" target="_blank" rel="noopener" uk-icon="icon: link">
+                                    <span class="uk-text-small">Original Image</span>
+                                </a>
+                            </div>
                         </div>
                     </div>
-                </div>
-                {% endif %}
+                    {% endif %}
+                {% endfor %}
+                    -->
             </div>
 
+            <!-- Results (source urls) -->
+            <div class="uk-switcher switcher-container">
+            {% for result in results %}
+            {% set source_url = result.source_url %}
+            {% set transformations = result.transformations %}
             <!-- Transformations (operations) -->
+            <div class="">
             {% for transform in transformations %}
             <div class="uk-card uk-card-default section-card-default uk-card-body uk-margin-bottom" >
                     <div uk-grid>
@@ -403,7 +433,10 @@
                     {% endfor %}
                 </div>
             </div>
-            {% endfor %}
+            {% endfor %} <!-- transformations -->
+            </div>
+            {% endfor %} <!-- results -->
+            </div>
         </div>
     </div>
 

@@ -107,7 +107,11 @@ class Transformation:
 class ImageComparator:
     """Compare image processing results across different backends."""
 
-    def __init__(self, source_url: str, output_file: str = "comparison.html"):
+    def __init__(
+        self,
+        source_urls: list[str] | str | tuple[str, ...],
+        output_file: str = "comparison.html",
+    ):
         """Initialize the comparator with a source image URL and output file path."""
         self.env = Environment(
             loader=FileSystemLoader(TEMPLATES_DIR),
@@ -123,7 +127,13 @@ class ImageComparator:
 
         self.env.filters["slugify"] = slugify
 
-        self.source_url = source_url
+        if isinstance(source_urls, str):
+            self.source_urls = [source_urls]
+        elif isinstance(source_urls, tuple):
+            self.source_urls = list(source_urls)
+        else:
+            self.source_urls = source_urls
+
         self.output_file = output_file
         self.backends: list[BaseImage] = []
         self.transformations: list[Transformation] = []
@@ -266,86 +276,95 @@ class ImageComparator:
                 return f".{step.method_name}({all_args})"
             return str(step)
 
-        # Prepare results structure
-        results = {}
-        for transform in self.transformations:
-            # Convert each step to its string representation
-            step_strings = []
-            for step in transform.operations:
-                # Directly format the method call
-                if hasattr(step, "method_name"):
-                    args_str = ", ".join([repr(arg) for arg in step.args])
-                    kwargs_str = ", ".join(
-                        [f"{k}={repr(v)}" for k, v in step.kwargs.items()]
-                    )
-                    all_args = ", ".join(filter(None, [args_str, kwargs_str]))
-                    step_str = f".{step.method_name}({all_args})"
-                    step_strings.append(step_str)
-                else:
-                    step_strings.append(str(step))
+        result_list = []
+        for source_url in self.source_urls:
+            # Prepare results structure
+            results = {}
+            for transform in self.transformations:
+                # Convert each step to its string representation
+                step_strings = []
+                for step in transform.operations:
+                    # Directly format the method call
+                    if hasattr(step, "method_name"):
+                        args_str = ", ".join([repr(arg) for arg in step.args])
+                        kwargs_str = ", ".join(
+                            [f"{k}={repr(v)}" for k, v in step.kwargs.items()]
+                        )
+                        all_args = ", ".join(filter(None, [args_str, kwargs_str]))
+                        step_str = f".{step.method_name}({all_args})"
+                        step_strings.append(step_str)
+                    else:
+                        step_strings.append(str(step))
 
-            # Join all steps into a single string
-            all_steps = "".join(step_strings)
+                # Join all steps into a single string
+                all_steps = "".join(step_strings)
 
-            results[transform.name] = {
-                "name": transform.name,
-                "description": transform.description,
-                "steps": all_steps,  # Single string with all steps
-                "results": {},
-            }
+                results[transform.name] = {
+                    "name": transform.name,
+                    "description": transform.description,
+                    "steps": all_steps,  # Single string with all steps
+                    "results": {},
+                }
 
-        # Process each backend
-        for backend_info in self.backends:
-            backend_name = backend_info["name"]
-            backend_class = backend_info["class"]
-            backend_kwargs = backend_info["kwargs"]
+            # Process each backend
+            for backend_info in self.backends:
+                backend_name = backend_info["name"]
+                backend_class = backend_info["class"]
+                backend_kwargs = backend_info["kwargs"]
 
-            # Initialize the backend
-            try:
-                # Create backend with the source URL and configuration
-                backend = backend_class(image=self.source_url, **backend_kwargs)
+                # Initialize the backend
+                try:
+                    # Create backend with the source URL and configuration
+                    backend = backend_class(image=source_url, **backend_kwargs)
 
-                # Run each transformation
-                for transform in self.transformations:
-                    transform_name = transform.name
-                    result = self._run_transform(backend, transform.operations)
-                    results[transform_name]["results"][backend_name] = result
+                    # Run each transformation
+                    for transform in self.transformations:
+                        transform_name = transform.name
+                        result = self._run_transform(backend, transform.operations)
+                        results[transform_name]["results"][backend_name] = result
 
-            except Exception as e:
-                print(f"Error initializing backend {backend_name}: {str(e)}")
-                # Add error to all transformations for this backend
-                for transform in self.transformations:
-                    results[transform.name]["results"][backend_name] = {
-                        "success": False,
-                        "error": str(e),
-                        "traceback": traceback.format_exc(),
-                    }
+                except Exception as e:
+                    print(f"Error initializing backend {backend_name}: {str(e)}")
+                    # Add error to all transformations for this backend
+                    for transform in self.transformations:
+                        results[transform.name]["results"][backend_name] = {
+                            "success": False,
+                            "error": str(e),
+                            "traceback": traceback.format_exc(),
+                        }
+            # Convert results to list for template
+            transformations_list = list(results.values())
 
-        # Convert results to list for template
-        transformations_list = list(results.values())
+            # Get source image dimensions if available
+            source_size = None
+            # try:
+            #    # Try to get image dimensions using Pillow
+            #    from io import BytesIO
 
-        # Get source image dimensions if available
-        source_size = None
-        try:
-            # Try to get image dimensions using Pillow
-            from io import BytesIO
+            #    import requests
+            #    from PIL import Image
 
-            import requests
-            from PIL import Image
-
-            response = requests.get(self.source_url)
-            img = Image.open(BytesIO(response.content))
-            source_size = img.size  # Returns (width, height)
-        except Exception:
-            # If we can't get dimensions, just use None
-            pass
+            #    response = requests.get(source_url)
+            #    img = Image.open(BytesIO(response.content))
+            #    source_size = img.size  # Returns (width, height)
+            # except Exception:
+            #    # If we can't get dimensions, just use None
+            #    pass
+            result_list.append(
+                {
+                    "source_url": source_url,
+                    "source_size": source_size,
+                    "transformations": transformations_list,
+                }
+            )
 
         # Render the template
         template = self.env.get_template("comparison_new.html")
         output = template.render(
-            source_url=self.source_url,
-            source_size=source_size,
-            transformations=transformations_list,
+            results=result_list,
+            # source_url=self.source_urls,
+            # source_size=source_size,
+            # transformations=transformations_list,
             timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         )
 
@@ -371,11 +390,18 @@ class ImageComparator:
 def create_sample_comparison():
     """Create a sample comparison with common transformations."""
     # Example image URL (can be replaced with any public image URL)
-    source_url = "https://wsrv.nl/lichtenstein.jpg"
+    source_url = [
+        "https://wsrv.nl/lichtenstein.jpg",
+        "https://wsrv.nl/puppy.jpg",
+        "https://wsrv.nl/transparency_demo.png",
+        "https://upload.wikimedia.org/wikipedia/commons/2/2c/Kalahari_lion_%28Panthera_leo%29_male_cub_4_months.jpg",
+        "https://raw.githubusercontent.com/cshum/imagor/master/testdata/dancing-banana.gif",
+        "https://media.inkscape.org/media/resources/file/Art_Bot.svg",
+    ]
 
     # Create comparator
     comparator = ImageComparator(
-        source_url=source_url, output_file="comparison_results/comparison.html"
+        source_urls=source_url, output_file="comparison_results/comparison.html"
     )
 
     # Add backends with their specific configurations
@@ -417,7 +443,7 @@ def create_sample_comparison():
     comparator.add_transformation(
         operations=[
             resize_step,
-            Operation("blur", radius=5),
+            Operation("blur", radius=10),
             Operation("quality", 85),
             Operation("round_corner", 40),
         ],
