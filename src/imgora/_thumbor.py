@@ -8,8 +8,8 @@ from __future__ import annotations
 
 from typing import List, Literal, Self
 
-from pymagor._converter import color_html_to_rgb
-from pymagor._core import BaseImagorThumbor, chain
+from imgora._converter import color_html_to_rgb
+from imgora._core import BaseImagorThumbor, chain
 
 
 class Thumbor(BaseImagorThumbor):
@@ -231,7 +231,7 @@ class Thumbor(BaseImagorThumbor):
 if __name__ == "__main__":
     import webbrowser
 
-    from pymagor import Signer
+    from imgora import Signer
 
     # Example image from Wikipedia
     image_url = (

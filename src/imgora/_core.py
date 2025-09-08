@@ -1,6 +1,6 @@
-"""Core functionality for Pymagor.
+"""Core functionality for Imgora.
 
-This module contains the base classes for the Pymagor library, providing
+This module contains the base classes for the Imgora library, providing
 common functionality for both Imagor and Thumbor clients.
 """
 
@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from typing import Any, Iterable, List, Literal, Self
 from urllib.parse import quote
 
-from pymagor.decorator import chain
+from imgora.decorator import chain
 
 
 @dataclass

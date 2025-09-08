@@ -1,6 +1,19 @@
-from tasks import info, error, success, header, warning, echo, env, task, Ctx, EnvError  # noqa: F401
-import toml
 from pathlib import Path
+
+import toml
+
+from tasks import (  # noqa: F401
+    Ctx,
+    EnvError,
+    echo,
+    env,
+    error,
+    header,
+    info,
+    success,
+    task,
+    warning,
+)
 
 
 @task
@@ -22,14 +35,53 @@ def update_venv(c: Ctx, dry: bool = False):
     info("Run 'source .venv/bin/activate'")
 
 
-@task(help={"venv_update": "Updates venv activate script (runs per default)"})
-def install(c: Ctx, venv_update: bool = True):
-    """Install the uv environment and install the pre-commit hooks"""
+@task(
+    help={
+        "all": "Install all dependencies",
+        "no_test": "Do not install test dependencies",
+        "no_dev": "Do not install dev dependencies",
+        "docs": "Install documentation dependencies",
+        "venv_update": "Updates venv activate script (runs per default)",
+    }
+)
+def install(
+    c: Ctx,
+    all: bool = False,
+    no_dev: bool = False,
+    no_test: bool = False,
+    docs: bool = False,
+    venv_update: bool = False,
+):
+    """Install the uv environment and install the pre-commit hooks.
+
+    Per default the test and dev dependencies are installed.
+    """
+    group: list[str] = []
+    dev = not no_dev
+    test = not no_test
+    if all:
+        dev = docs = test = True
+    if dev:
+        group.append("dev")
+    if docs:
+        group.append("docs")
+    if test:
+        group.append("test")
     echo("🚀 Creating virtual environment using uv and install pre-commit hooks")
-    c.run("uv sync --all-groups")
+    if not group:
+        group_arg = "--no-dev"
+    elif "all" in group:
+        group_arg = "--all-groups"
+    else:
+        group_arg = " ".join([f"--group {g}" for g in group])
+    cmd = f"uv sync {group_arg}"
+    info(f"Run '{cmd}'")
+    c.run(cmd)
     c.run("uv run pre-commit install")
     if venv_update:
         update_venv(c)
+    if group:
+        success(f"Group {', '.join([f"'{g}'" for g in group])} installed.")
     success("Installation done, your are ready to go ...")
 
 

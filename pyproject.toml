@@ -1,7 +1,7 @@
 [project]
-name = "pymagor"
+name = "imgora"
 version = "0.0.1"
-description = "Chainable image URL generator for Imagor and Thumbor with full filter support"
+description = "Chainable image URL generator for Imagor, Thumbor and Wsrv.nl with full filter support"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
@@ -21,13 +21,13 @@ dependencies = [
 ]
 
 [project.scripts]
-pymagor = "pymagor.cli:main"
+imgora = "imgora.cli:main"
 
 [project.urls]
-Repository = "https://github.com/burgdev/pymagor"
-Documentation = "https://burgdev.github.io/pymagor/"
-Changelog = "https://github.com/burgdev/pymagor/blob/main/CHANGELOG.md"
-Releases = "https://github.com/burgdev/pymagor/releases"
+Repository = "https://github.com/burgdev/imgora"
+Documentation = "https://burgdev.github.io/imgora/"
+Changelog = "https://github.com/burgdev/imgora/blob/main/CHANGELOG.md"
+Releases = "https://github.com/burgdev/imgora/releases"
 
 [dependency-groups]
 dev = [
@@ -72,7 +72,7 @@ test = [
 "__init__.py" = ["F401"]
 
 [tool.ruff.lint.isort]
-known-third-party = ["pymagor"]
+known-third-party = ["imgora"]
 
 [tool.deptry]
 extend_exclude = ["tasks/__init__.py"]
@@ -85,10 +85,9 @@ DEP004 = [
   "invoke",
   "environs",
   "humanize",
-  "python_on_whales",
   "mkdocs_gen_files",
 ] # only in dev
-DEP003 = ["pymagor"] # transitive dependencies
+DEP003 = ["imgora"] # transitive dependencies
 
 [build-system]
 requires = ["hatchling"]

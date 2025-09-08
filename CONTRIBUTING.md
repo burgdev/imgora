@@ -12,7 +12,8 @@ make
 After this the command `inv` is used:
 
 ```bash
-inv --list
+source .venv/bin/activate
+inv help
 inv install        # install updates
 inv check          # run all quality checks
 ```

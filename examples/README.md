@@ -1,6 +1,6 @@
-# Pymagor Examples
+# Imgora Examples
 
-This directory contains example scripts and sample images to demonstrate how to use the pymagor CLI.
+This directory contains example scripts and sample images to demonstrate how to use the imgora CLI.
 
 ## Sample Images
 
@@ -16,7 +16,7 @@ This directory contains example scripts and sample images to demonstrate how to 
 
 ## Running Examples
 
-1. Make sure pymagor is installed in your environment:
+1. Make sure imgora is installed in your environment:
    ```bash
    pip install -e .
    ```
@@ -28,5 +28,5 @@ This directory contains example scripts and sample images to demonstrate how to 
 
 3. Or use the CLI directly:
    ```bash
-   pymagor imagor examples/sample.jpg --width 800 --height 600 --fit-in
+   imgora imagor examples/sample.jpg --width 800 --height 600 --fit-in
    ```

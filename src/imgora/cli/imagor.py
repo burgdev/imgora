@@ -3,7 +3,7 @@
 from typing import Any
 
 import click
-from pymagor import Imagor
+from imgora import Imagor
 
 from .base import BaseCLI
 
@@ -127,9 +127,9 @@ def imagor(
     Examples:
 
     \b
-    $ pymagor imagor path/to/image.jpg --width 800 --height 600 --fit-in
-    $ pymagor imagor https://example.com/image.jpg --crop 10 10 200 200 --blur 5 --quality 80
-    $ pymagor imagor image.jpg --stretch --width 300 --height 200
+    $ imgora imagor path/to/image.jpg --width 800 --height 600 --fit-in
+    $ imgora imagor https://example.com/image.jpg --crop 10 10 200 200 --blur 5 --quality 80
+    $ imgora imagor image.jpg --stretch --width 300 --height 200
     """
     cli = ImagorCLI(base_url=base)
 

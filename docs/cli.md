@@ -3,13 +3,13 @@
 A command line interface is used.
 
 ```bash
-pymagor -h
+imgora -h
 ```
 
 ::: mkdocs-click
-  :module: pymagor.cli
+  :module: imgora.cli
   :command: main
-  :prog_name: pymagor
+  :prog_name: imgora
   :depth: 1
   :style: plain
   :list_subcommands: True

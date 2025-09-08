@@ -1,8 +1,8 @@
 .PHONY: init
 init: ## Install the uv environment and install the pre-commit hooks
 	@echo "Creating virtual environment using uv"
-	@uv sync
-	@ uv run invoke install
+	@uv sync --dev
+	@ uv run invoke install --venv-update
 
 .PHONY: help
 help:

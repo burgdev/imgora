@@ -1,12 +1,12 @@
-"""Decorators for pymagor.
+"""Decorators for imgora.
 
-This module provides decorators for pymagor.
+This module provides decorators for imgora.
 
 Examples:
 
 ```python
-from pymagor import Imagor, Signer
-from pymagor.decorator import filter, operation, chained_method
+from imgora import Imagor, Signer
+from imgora.decorator import filter, operation, chained_method
 
 class MyImagor(Imagor):
     @filter

@@ -1,26 +1,26 @@
-site_name: Pymagor
-site_url: https://burgdev.github.io/pymagor
+site_name: Imgora
+site_url: https://burgdev.github.io/imgora
 
-repo_url: https://github.com/burgdev/pymagor
-repo_name: burgdev/pymagor
+repo_url: https://github.com/burgdev/imgora
+repo_name: burgdev/imgora
 
 nav:
   - "Home": index.md
   - "Getting Started": docu.md
-  - "<i>pymagor</i>": cli.md
+  - "<i>imgora</i>": cli.md
   - Packages: packages.md
   - API Reference:
-      - pymagor: reference/
+      - imgora: reference/
   - Changelog: changelog.md
 
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/burgdev/pymagor
+      link: https://github.com/burgdev/imgora
     - icon: fontawesome/brands/docker
-      link: https://ghcr.io/burgdev/pymagor
+      link: https://ghcr.io/burgdev/imgora
     - icon: fontawesome/brands/python
-      link: https://pypi.org/project/pymagor/
+      link: https://pypi.org/project/imgora/
 
 theme:
   name: material
@@ -87,7 +87,7 @@ theme:
 plugins:
   #  - blog
   - open-in-new-tab:
-      add_icon: true
+      add_icon: false
   - search:
       separator: '[\s\u200b\-_,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
   - gen-files:

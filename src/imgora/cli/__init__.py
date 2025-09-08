@@ -1,7 +1,7 @@
-"""Command-line interface for pymagor."""
+"""Command-line interface for imgora."""
 
 import click
-from pymagor import __version__
+from imgora import __version__
 
 from .imagor import imagor
 from .thumbor import thumbor
@@ -10,7 +10,7 @@ from .thumbor import thumbor
 @click.group()
 @click.version_option(version=__version__)
 def main() -> None:
-    """Pymagor - Chainable image URL generator for Imagor and Thumbor."""
+    """Imgora - Chainable image URL generator for Imagor and Thumbor."""
     pass
 
 

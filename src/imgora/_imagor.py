@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Literal, Optional, Self
 from urllib.parse import quote
 
-from pymagor._core import BaseImagorThumbor, chain
+from imgora._core import BaseImagorThumbor, chain
 
 
 class Imagor(BaseImagorThumbor):
@@ -234,7 +234,7 @@ class Imagor(BaseImagorThumbor):
 if __name__ == "__main__":
     import webbrowser
 
-    from pymagor import Signer
+    from imgora import Signer
 
     # Example image from Wikipedia
     image_url = (

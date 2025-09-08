@@ -8,8 +8,8 @@ from __future__ import annotations
 
 from typing import Literal, Self
 
-from pymagor._core import BaseImage
-from pymagor.decorator import chain
+from imgora._core import BaseImage
+from imgora.decorator import chain
 
 
 class WsrvNl(BaseImage):
@@ -248,7 +248,7 @@ class WsrvNl(BaseImage):
 if __name__ == "__main__":
     import webbrowser
 
-    from pymagor import Signer
+    from imgora import Signer
 
     # Example image from Wikipedia
     image_url = (

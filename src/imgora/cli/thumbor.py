@@ -3,7 +3,7 @@
 from typing import Any
 
 import click
-from pymagor import Thumbor
+from imgora import Thumbor
 
 from .base import BaseCLI
 
@@ -130,9 +130,9 @@ def thumbor(
     Examples:
 
     \b
-    $ pymagor thumbor path/to/image.jpg --width 800 --height 600 --fit-in
-    $ pymagor thumbor https://example.com/image.jpg --crop 10 10 200 200 --blur 5 --quality 80
-    $ pymagor thumbor image.jpg --brightness 20 --contrast 10
+    $ imgora thumbor path/to/image.jpg --width 800 --height 600 --fit-in
+    $ imgora thumbor https://example.com/image.jpg --crop 10 10 200 200 --blur 5 --quality 80
+    $ imgora thumbor image.jpg --brightness 20 --contrast 10
     """
     cli = ThumborCLI(base_url=base)
 

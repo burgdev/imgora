@@ -1,14 +1,14 @@
 ## :simple-pypi: PyPi
 
 
-The package is published to [PyPi package](https://pypi.org/project/pymagor/).
+The package is published to [PyPi package](https://pypi.org/project/imgora/).
 
 === "`uv`"
 
     Run it as [`uv`](https://docs.astral.sh/uv/) tool:
 
     ```bash
-    $ uvx pymagor [OPTIONS] [ARGS]...
+    $ uvx imgora [OPTIONS] [ARGS]...
     ```
 
 === "`pipx`"
@@ -16,8 +16,8 @@ The package is published to [PyPi package](https://pypi.org/project/pymagor/).
     Install it in isolated environment with `pipx`:
 
     ```bash
-    $ pipx install pymagor
-    $ pymagor [OPTIONS] [COMMAND] [ARGS]...
+    $ pipx install imgora
+    $ imgora [OPTIONS] [COMMAND] [ARGS]...
     ```
 
 === "`pip`"
@@ -25,6 +25,6 @@ The package is published to [PyPi package](https://pypi.org/project/pymagor/).
     Install it with `pip`:
 
     ```bash
-    $ pip install pymagor
-    $ pymagor [OPTIONS] COMMAND [ARGS]...
+    $ pip install imgora
+    $ imgora [OPTIONS] COMMAND [ARGS]...
     ```

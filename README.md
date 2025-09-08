@@ -1,22 +1,22 @@
-<h3 align="center"><b>Pymagor</b></h3>
+<h3 align="center"><b>Imgora</b></h3>
 <p align="center">
-  <a href="https://burgdev.github.io/pymagor"><img src="https://via.placeholder.com/80" alt="Pymagor" width="80" /></a>
+  <a href="https://burgdev.github.io/imgora"><img src="https://via.placeholder.com/80" alt="Imgora" width="80" /></a>
 </p>
 <p align="center">
     <em>Chainable Python client for Imagor and Thumbor image processing servers</em>
 </p>
 <p align="center">
-    <b><a href="https://burgdev.github.io/pymagor/docu/">Documentation</a></b>
-    | <b><a href="https://pypi.org/project/pymagor/">PyPI</a></b>
+    <b><a href="https://burgdev.github.io/imgora/docu/">Documentation</a></b>
+    | <b><a href="https://pypi.org/project/imgora/">PyPI</a></b>
 </p>
 
 ---
 
-**Pymagor** provides a clean, chainable interface for generating image URLs for [Imagor](https://github.com/cshum/imagor) and [Thumbor](https://github.com/thumbor/thumbor) image processing servers. It supports all standard operations and filters with full type hints and documentation.
+**Imgora** provides a clean, chainable interface for generating image URLs for [Imagor](https://github.com/cshum/imagor), [Thumbor](https://github.com/thumbor/thumbor) and [Wsrv.nl](https://wsrv.nl) image processing servers. It supports all standard operations and filters with full type hints and documentation.
 
 ## Features
 
-- **Imagor & Thumbor Support**: Compatible with both Imagor and Thumbor servers
+- **[Imagor](https://github.com/cshum/imagor), [Thumbor](https://github.com/thumbor/thumbor) & [Wsrv.nl](https://wsrv.nl) Support**: Compatible with Imagor, Thumbor and Wsrv.nl servers
 - **URL Signing**: Built-in support for secure URL signing
 - **Chainable API**: Fluent interface for building complex image processing pipelines
 - **Comprehensive Filter Support**: Implements all standard filters and operations
@@ -26,18 +26,18 @@
 
 Using [uv](https://github.com/astral-sh/uv) (recommended):
 ```bash
-uv pip install pymagor
+uv pip install imgora
 ```
 
 Or with pip:
 ```bash
-pip install pymagor
+pip install imgora
 ```
 
 ## Quick Start
 
 ```python
-from pymagor import Imagor
+from imgora import Imagor
 
 # Create and configure an image processor
 img = (
@@ -55,7 +55,7 @@ print(f"Generated URL: {url}")
 
 ## Documentation
 
-For complete documentation, including API reference and advanced usage, please visit the [documentation site](https://burgdev.github.io/pymagor/docu/).
+For complete documentation, including API reference and advanced usage, please visit the [documentation site](https://burgdev.github.io/imgora/docu/).
 
 ## Development
 
@@ -63,11 +63,12 @@ To set up the development environment:
 
 ```bash
 # Clone the repository
-git clone https://github.com/burgdev/pymagor.git
-cd pymagor
+git clone https://github.com/burgdev/imgora.git
+cd imgora
 
 # Install development dependencies
-make install-dev
+make
+uv run invoke install # install 'dev' and 'test' dependencies per default, use --all to install all dependencies
 ```
 
 ## Contributing

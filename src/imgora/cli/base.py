@@ -1,16 +1,16 @@
-"""Base CLI class for pymagor commands."""
+"""Base CLI class for imgora commands."""
 
 from abc import ABC, abstractmethod
 from typing import Any, List, Type, TypeVar
 
 import click
-from pymagor import Imagor, Thumbor
+from imgora import Imagor, Thumbor
 
 T = TypeVar("T", bound="BaseCLI")
 
 
 class BaseCLI(ABC):
-    """Base class for pymagor CLI commands."""
+    """Base class for imgora CLI commands."""
 
     def __init__(self, base_url: str = "http://localhost:8000"):
         """Initialize the CLI with a base URL.
