@@ -482,7 +482,7 @@ def create_sample_comparison():
         operations=[
             resize_step,
             Operation("crop", 50, 80, 20, 100),
-            Operation("trim"),
+            # Operation("trim"),
         ],
     )
 

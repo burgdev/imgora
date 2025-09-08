@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from typing import Any, Iterable, List, Literal, Self
 from urllib.parse import quote
 
+import requests
 from imgora.decorator import chain
 
 
@@ -383,6 +384,20 @@ class BaseImage(ABC):
         if filters:
             self.add_operation("filters", "filters:" + ":".join(filters))
         return bool(filters)
+
+    @property
+    def size(self) -> tuple[int | None, int | None]:
+        """Returns the image size."""
+        # TODO use original image to get size??
+        _url = self.meta().url()
+        img = requests.get(
+            _url, headers={"User-Agent": "imgora (https://github.com/burgdev/imgora)"}
+        )
+        _width = img.json().get("width")
+        _height = img.json().get("height")
+        assert _width is not None, f"Could not get width from '{_url}'"
+        assert _height is not None, f"Could not get height from '{self.meta().url()}'"
+        return int(_width), int(_height)
 
     # Common operations
 

@@ -76,6 +76,7 @@ class WsrvNl(BaseImage):
         bottom: int | float,
         # halign: Literal["left", "center", "right"] | None = None,
         # valign: Literal["top", "middle", "bottom"] | None = None,
+        prcrop: bool = True,
     ) -> Self:
         """Crop the image. Coordinates are in pixel or float values between 0 and 1 (percentage of image dimensions)
 
@@ -87,10 +88,13 @@ class WsrvNl(BaseImage):
             halign: Horizontal alignment of the crop (left, center, right).
             valign: Vertical alignment of the crop (top, middle, bottom).
         """
-        self.add_filter("cx", right)
-        self.add_filter("cy", bottom)
-        self.add_filter("cw", right - left)
-        self.add_filter("ch", bottom - top)
+        w, h = self.size
+        self.add_filter("cx", left)
+        self.add_filter("cy", top)
+        self.add_filter("cw", w - left - right)
+        self.add_filter("ch", h - top - bottom)
+        if prcrop:
+            self.add_filter("precrop")
         # self.add_filter("fit", "cover")
 
     @chain

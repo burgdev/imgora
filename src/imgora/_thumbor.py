@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from typing import List, Literal, Self
 
+import requests
 from imgora._converter import color_html_to_rgb
 from imgora._core import BaseImagorThumbor, chain
 
@@ -16,6 +17,17 @@ class Thumbor(BaseImagorThumbor):
     """Thumbor image processor with Thumbor-specific operations and filters.
 
     Filter documentation: https://thumbor.readthedocs.io/en/latest/filters.html"""
+
+    @property
+    def size(self) -> tuple[int | None, int | None]:
+        """Returns the image size."""
+        img = requests.get(self.meta().url())
+        info = img.json().get("thumbor", {}).get("source", {})
+        _width = info.get("width")
+        _height = info.get("height")
+        assert _width is not None, f"Could not get width from '{self.meta().url()}'"
+        assert _height is not None, f"Could not get height from '{self.meta().url()}'"
+        return int(_width), int(_height)
 
     # ===== Operations =====
     # compared to imagor it adds method as well.
