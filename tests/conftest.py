@@ -1,4 +1,4 @@
-"""Pytest configuration and fixtures for pymagor tests."""
+"""Pytest configuration and fixtures for imgora tests."""
 
 import pytest
 

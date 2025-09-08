@@ -1,6 +1,6 @@
 import webbrowser
 
-from pymagor import Imagor, Signer
+from imgora import Imagor, Signer
 
 # Example image from Wikipedia
 image_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg/1200px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg"

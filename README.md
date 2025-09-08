@@ -1,6 +1,6 @@
 <h3 align="center"><b>Imgora</b></h3>
 <p align="center">
-  <a href="https://burgdev.github.io/imgora"><img src="https://via.placeholder.com/80" alt="Imgora" width="80" /></a>
+  <a href="https://burgdev.github.io/imgora"><img src="assets/logo/logo.svg" alt="Imgora" width="128" /></a>
 </p>
 <p align="center">
     <em>Chainable Python client for Imagor and Thumbor image processing servers</em>
@@ -41,9 +41,9 @@ from imgora import Imagor
 
 # Create and configure an image processor
 img = (
-    Imagor(key="your-secret-key")
-    .with_base("https://your-imagor-server.com")
-    .with_image("path/to/image.jpg")
+    Imagor(key="my_key")
+    .with_base("http://localhost:8018")
+    .with_image("https://wsrv.nl/puppy.jpg")
     .fit_in(300, 300)
     .blur(3)
 )
@@ -52,6 +52,21 @@ img = (
 url = img.url()
 print(f"Generated URL: {url}")
 ```
+
+In order to test the url you need to start an Imagor server.
+You can do this with the following command:
+
+```bash
+docker compose up imagor -d
+```
+
+Run the example script:
+
+```bash
+docker compose up -d # start imagor and thumbor server
+uv run examples/compare_backends_advanced.py
+```
+
 
 ## Documentation
 

@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 import requests
-
-from pymagor import Thumbor
-
+from imgora import Thumbor
 
 # Note: These tests are similar to the Imagor tests but use Thumbor-specific features
 # In a real-world scenario, you would need a Thumbor server for testing

@@ -8,6 +8,8 @@ It uses a declarative approach to define transformations and supports nested tra
 
 import json
 import os
+import sys
+import tempfile
 import traceback
 import webbrowser
 from dataclasses import asdict, dataclass, field
@@ -16,10 +18,11 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import requests
-from jinja2 import Environment, FileSystemLoader
 
 # Import backends
-from pymagor import BaseImage, Imagor, Signer, Thumbor, WsrvNl
+from imgora import BaseImage, Imagor, Signer, Thumbor, WsrvNl
+from jinja2 import Environment, FileSystemLoader
+from loguru import logger as log
 
 # Configure Jinja2 environment
 TEMPLATES_DIR = Path(__file__).parent / "templates"
@@ -218,7 +221,7 @@ class ImageComparator:
                         current.meta().url(),
                         headers={
                             "Accept": "application/json",
-                            "User-Agent": "pymagor (https://github.com/burgdev/pymagor)",
+                            "User-Agent": "imgora (https://github.com/burgdev/imgora)",
                         },
                     )
                     meta = meta_result.json()
@@ -262,6 +265,7 @@ class ImageComparator:
         Returns:
             Path to the generated HTML file
         """
+        log.info("Running image processing comparison...")
         results = {}
 
         def step_to_dict(step):
@@ -278,6 +282,7 @@ class ImageComparator:
 
         result_list = []
         for source_url in self.source_urls:
+            log.info(f"Processing '{source_url}'")
             # Prepare results structure
             results = {}
             for transform in self.transformations:
@@ -324,7 +329,7 @@ class ImageComparator:
                         results[transform_name]["results"][backend_name] = result
 
                 except Exception as e:
-                    print(f"Error initializing backend {backend_name}: {str(e)}")
+                    log.error(f"Error initializing backend {backend_name}: {str(e)}")
                     # Add error to all transformations for this backend
                     for transform in self.transformations:
                         results[transform.name]["results"][backend_name] = {
@@ -359,7 +364,8 @@ class ImageComparator:
             )
 
         # Render the template
-        template = self.env.get_template("comparison_new.html")
+        log.info("Rendering comparison...")
+        template = self.env.get_template("comparison_uikit.html")
         output = template.render(
             results=result_list,
             # source_url=self.source_urls,
@@ -379,11 +385,11 @@ class ImageComparator:
         # Open in browser if requested
         if open_in_browser:
             try:
-                webbrowser.open(f"file://{output_path.absolute()}")
+                webbrowser.open(f"file://{output_path.absolute()}", new=2)
             except Exception as e:
-                print(f"Could not open browser: {e}")
+                log.error(f"Could not open browser: {e}")
 
-        print(f"Report generated at: {output_path.absolute()}")
+        log.info(f"Report generated at: {output_path.absolute()}")
         return str(output_path.absolute())
 
 
@@ -399,13 +405,23 @@ def create_sample_comparison():
         "https://media.inkscape.org/media/resources/file/Art_Bot.svg",
     ]
 
-    # Create comparator
-    comparator = ImageComparator(
-        source_urls=source_url, output_file="comparison_results/comparison.html"
-    )
+    log.info("Setting up directories...")
+    tmp_dir = Path("comparison_results")
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+    temp_dir = Path(tempfile.mkdtemp(prefix="img_comparison_"))
+    output_file = temp_dir / "comparison.html"
+    log.debug(f"Using temporary directory: {temp_dir}")
+    log.debug(f"Saving comparison results to: {output_file}")
+
+    # Create comparator with temporary output path
+    log.info("Initializing ImageComparator...")
+    comparator = ImageComparator(source_urls=source_url, output_file=str(output_file))
 
     # Add backends with their specific configurations
+    log.info("Configuring backends...")
+
     # Imagor
+    log.debug("Adding Imagor backend")
     comparator.add_backend(
         "Imagor",
         Imagor,
@@ -413,7 +429,8 @@ def create_sample_comparison():
         signer=Signer(key="my_key", type="sha256"),
     )
 
-    # Thumbor (using the signer instead of key)
+    # Thumbor
+    log.debug("Adding Thumbor backend")
     comparator.add_backend(
         "Thumbor",
         Thumbor,
@@ -426,6 +443,17 @@ def create_sample_comparison():
 
     resize_step = Operation("resize", 1000, 600)
     # Add transformations
+    log.info("Configuring transformations...")
+    log.debug("Adding resize transformation")
+    # Basic resize
+    comparator.add_transformation(
+        [
+            Operation("resize", width=300, height=200, crop="smart"),
+        ],
+        name="resize_300x200_smart",
+        description="Basic resize to 300x200 with smart crop",
+    )
+
     # 1. Simple resize
     comparator.add_transformation(
         operations=[resize_step],
@@ -449,6 +477,7 @@ def create_sample_comparison():
         ],
         description="Resize, convert to grayscale, and set quality",
     )
+
     comparator.add_transformation(
         operations=[
             resize_step,
@@ -465,10 +494,28 @@ def create_sample_comparison():
     )
 
     # Run the comparison
-    output_path = comparator.run()
-    print(f"Comparison generated at: {output_path}")
+    output_path = comparator.run(open_in_browser=True)
     return output_path
 
 
+def setup_logging():
+    """Configure loguru logger with colors and formatting."""
+    log.remove()  # Remove default handler
+    log.add(
+        sys.stderr,
+        colorize=True,
+        format="<green>{time:HH:mm:ss}</green> <level>{level.name: <8}</level> {message}",
+        level="INFO",
+    )
+
+
 if __name__ == "__main__":
-    create_sample_comparison()
+    setup_logging()
+    log.info("Starting image backend comparison")
+    try:
+        create_sample_comparison()
+        log.info("Comparison completed successfully")
+    except Exception as e:
+        log.error(f"Error: {str(e)}")
+        log.debug("Error details:", exc_info=True)
+        sys.exit(1)

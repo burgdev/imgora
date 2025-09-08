@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import requests
-
-from pymagor import Imagor
+from imgora import Imagor
 
 
 def test_basic_usage(imagor_service: dict, test_image_url: str) -> None:
