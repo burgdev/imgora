@@ -1,10 +1,9 @@
 name: New Version
 
 on:
-  workflow_run:
-    workflows: ["Build Docker"]
-    types:
-      - completed
+  push:
+    branches:
+      - main
 
 jobs:
   check-and-tag:
