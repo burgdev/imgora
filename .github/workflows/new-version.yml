@@ -4,7 +4,7 @@ on:
   workflow_run:
     workflows: ["Main"]
     types:
-      - complete
+      - completed
 
 jobs:
   check-and-tag:
