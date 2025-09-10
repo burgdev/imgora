@@ -22,6 +22,7 @@ from imgora._core import (
     VALIGN,  # noqa: F401
     BaseImage,  # noqa: F401
     Filter,  # noqa: F401
+    ImageFormats,  # noqa: F401
     Operation,  # noqa: F401
     Signer,  # noqa: F401
 )
@@ -40,4 +41,5 @@ __all__ = [
     "Operation",
     "HALIGN",
     "VALIGN",
+    "ImageFormats",
 ]

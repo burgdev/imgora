@@ -41,7 +41,11 @@ class Filter:
     """
 
     name: str
-    args: tuple[any, ...] = field(default_factory=tuple)
+    args: tuple[Any, ...] = field(default_factory=tuple)
+
+
+HashCode: TypeAlias = Literal["sha1", "sha256", "sha512"]
+"""Hash algorithm for URL signing."""
 
 
 class Signer:
@@ -49,7 +53,7 @@ class Signer:
 
     def __init__(
         self,
-        type: Literal["sha1", "sha256", "sha512"] = "sha1",
+        type: HashCode = "sha1",
         truncate: int | None = None,
         key: str | None = None,
         unsafe: bool | None = None,
@@ -61,13 +65,13 @@ class Signer:
             key: The signing key/secret, needs to be the same as defined in the Imagor/Thumbor server.
             unsafe: Whether to disable signing, if no key is set it defaults to unsafe, but with this option you can override it.
         """
-        self._type = type
+        self._type: HashCode = type
         self._truncate = truncate
         self._key = key
         self._unsafe = unsafe
 
     @property
-    def type(self) -> Literal["sha1", "sha256", "sha512"]:
+    def type(self) -> HashCode:
         """Hash algorithm for URL signing."""
         return self._type
 
@@ -97,6 +101,9 @@ HALIGN: TypeAlias = Literal["left", "center", "right"]
 VALIGN: TypeAlias = Literal["top", "middle", "bottom"]
 """Vertical alignment values type."""
 
+ImageFormats: TypeAlias = Literal["jpg", "png", "webp", "gif"]
+"""Image formats."""
+
 
 @dataclass
 class CropValues:
@@ -108,8 +115,8 @@ class CropValues:
     image_height: int
     crop_width: int
     crop_height: int
-    halign: HALIGN
-    valign: VALIGN
+    halign: HALIGN | None = None
+    valign: VALIGN | None = None
 
 
 # /HASH|unsafe/trim/AxB:CxD/fit-in/stretch/-Ex-F/GxH:IxJ/HALIGN/VALIGN/smart/filters:NAME(ARGS):NAME(ARGS):.../IMAGE
@@ -204,7 +211,10 @@ class BaseImage(ABC):
     def remove(
         self,
         name: str,
-        include: tuple[Literal["operations", "filters"]] = ("operations", "filters"),
+        include: tuple[Literal["operations", "filters"], ...] = (
+            "operations",
+            "filters",
+        ),
     ) -> None:
         """Remove an operation or filter from the image processing pipeline by name.
 
@@ -247,6 +257,7 @@ class BaseImage(ABC):
             image: Path or URL of the source image.
         """
         self._image = image.lstrip("/")
+        return self
 
     @chain
     def with_base(self, base_url: str) -> Self:
@@ -256,6 +267,7 @@ class BaseImage(ABC):
             base_url: Base URL of the server.
         """
         self._base_url = base_url.rstrip("/")
+        return self
 
     def path(
         self,
@@ -309,10 +321,10 @@ class BaseImage(ABC):
             ValueError: If no key is configured for signing.
         """
         signer = signer or self._signer
-        if signer.unsafe:
-            return "unsafe"
         if not signer:
             raise ValueError("Signing object is required for URL signing")
+        if signer.unsafe:
+            return "unsafe"
         if not signer.key:
             raise ValueError("Signing key is required for URL signing")
 
@@ -362,11 +374,13 @@ class BaseImage(ABC):
             self._signer = signer
         if unsafe:
             self._signer = None
+        return self
 
     @chain
     def unsafe(self) -> Self:
         """Set the signer to unsafe."""
         self._signer = None
+        return self
 
     @property
     def op_order(self) -> tuple[str, ...]:
@@ -411,9 +425,8 @@ class BaseImage(ABC):
             self.add_operation("filters", "filters:" + ":".join(filters))
         return bool(filters)
 
-    def get_size(self, original: bool = False) -> tuple[int | None, int | None]:
+    def get_size(self, original: bool = False) -> tuple[int, int]:
         """Returns the image size."""
-        # TODO use original image to get size??
         if original:
             other = self._clone()
             other.remove_operations()
@@ -436,6 +449,7 @@ class BaseImage(ABC):
     def trim(self) -> Self:
         """Trim the image."""
         self.add_operation("trim")
+        return self
 
     def _get_crop_values(
         self,
@@ -524,18 +538,21 @@ class BaseImage(ABC):
             raise ValueError(
                 "Either 'left', 'top', 'right', 'bottom' or 'width', 'height' must be specified"
             )
-
+        assert right is not None
+        assert left is not None
+        assert bottom is not None
+        assert top is not None
         crop_width = right - left
         crop_height = bottom - top
         return CropValues(
-            left=left,
-            top=top,
-            right=right,
-            bottom=bottom,
+            left=int(left),
+            top=int(top),
+            right=int(right),
+            bottom=int(bottom),
             image_width=image_width,
             image_height=image_height,
-            crop_width=crop_width,
-            crop_height=crop_height,
+            crop_width=int(crop_width),
+            crop_height=int(crop_height),
             halign=halign,
             valign=valign,
         )
@@ -603,6 +620,7 @@ class BaseImage(ABC):
         #    self.add_operation("halign", halign)
         # if valign:
         #    self.add_operation("valign", valign)
+        return self
 
     @chain
     def resize(
@@ -636,6 +654,7 @@ class BaseImage(ABC):
         else:
             self.remove("upscale")
             self.add_filter("no_upscale")
+        return self
 
     @chain
     def meta(
@@ -643,6 +662,7 @@ class BaseImage(ABC):
     ) -> Self:
         """Shows meta information of the image."""
         self.add_operation("meta")
+        return self
 
     # ===== Common Filters =====
     @chain
@@ -654,6 +674,7 @@ class BaseImage(ABC):
             color: Background color in hex format without # or 'auto' (e.g., 'FFFFFF', 'aab').
         """
         self.add_filter("background_color", color.removeprefix("#").lower())
+        return self
 
     @chain
     def blur(self, radius: int, sigma: int | None = None) -> Self:
@@ -669,6 +690,7 @@ class BaseImage(ABC):
         else:
             assert 0 <= sigma <= 150, "Sigma must be between 0 and 150"
             self.add_filter("blur", f"{radius},{sigma}")
+        return self
 
     @chain
     def brightness(self, amount: int) -> Self:
@@ -680,6 +702,7 @@ class BaseImage(ABC):
         """
         assert -100 <= amount <= 100, "Amount must be between -100 and 100"
         self.add_filter("brightness", amount)
+        return self
 
     @chain
     def contrast(self, amount: int) -> Self:
@@ -691,6 +714,7 @@ class BaseImage(ABC):
         """
         assert -100 <= amount <= 100, "Amount must be between -100 and 100"
         self.add_filter("brightness_contrast", amount)
+        return self
 
     @chain
     def rgb(
@@ -707,14 +731,15 @@ class BaseImage(ABC):
             b: `-100` to `100`. Blue channel adjustment.
         """
         self.add_filter("rgb", r, g, b)
+        return self
 
     @chain
     def focal(
         self,
-        left: int,
-        top: int,
-        right: int,
-        bottom: int,
+        left: int | float | None = None,
+        top: int | float | None = None,
+        right: int | float | None = None,
+        bottom: int | float | None = None,
     ) -> Self:
         """Set the focal point of the image, which is used in later transforms (e.g. `crop`).
 
@@ -724,7 +749,7 @@ class BaseImage(ABC):
             right: Right coordinate of the focal region.
             bottom: Bottom coordinate of the focal region.
         """
-        self.add_filter("focal", f"{left}x{top}:{right}x{bottom}")
+        raise NotImplementedError
 
     @chain
     def quality(self, amount: int) -> Self:
@@ -734,6 +759,23 @@ class BaseImage(ABC):
             amount: Quality percentage (1-100).
         """
         self.add_filter("quality", amount)
+        return self
+
+    @chain
+    def round_corner(
+        self,
+        rx: int,
+        ry: int | None = None,
+        color: str | None = None,
+    ) -> Self:
+        """Add rounded corners to the image.
+
+        Args:
+            rx: X radius of the corners in pixels.
+            ry: Y radius of the corners in pixels (defaults to rx).
+            color: Corner color in CSS format (default: "none").
+        """
+        raise NotImplementedError
 
     def radius(self, rx: int, ry: int | None = None, color: str | None = None) -> Self:
         """Add rounded corners to the image (alias for round_corner).
@@ -794,10 +836,10 @@ class BaseImagorThumbor(BaseImage):
             ValueError: If no key is configured for signing.
         """
         signer = signer or self._signer
-        if signer.unsafe:
-            return "unsafe"
         if not signer:
             raise ValueError("Signing object is required for URL signing")
+        if signer.unsafe:
+            return "unsafe"
         if not signer.key:
             raise ValueError("Signing key is required for URL signing")
 
@@ -815,39 +857,13 @@ class BaseImagorThumbor(BaseImage):
         )
 
     # ===== Common Operations =====
-    @chain
-    def halign(self, halign: Literal["left", "center", "right"]) -> Self:
-        """Set the horizontal alignment of the image.
-
-        Args:
-            halign: Horizontal alignment of the image (left, center, right).
-        """
-        self.add_operation("halign", halign)
-
-    @chain
-    def valign(self, valign: Literal["top", "middle", "bottom"]) -> Self:
-        """Set the vertical alignment of the image.
-
-        Args:
-            valign: Vertical alignment of the image (top, middle, bottom).
-        """
-        self.add_operation("valign", valign)
-
-    @chain
-    def fit_in(self, width: int, height: int) -> Self:
-        """Fit the image within the specified dimensions while preserving aspect ratio.
-
-        Args:
-            width: Target width in pixels.
-            height: Target height in pixels.
-        """
-        self.add_operation("fit-in", f"{width}x{height}")
 
     # ===== Common Filters =====
     @chain
     def grayscale(self) -> Self:
         """Convert the image to grayscale."""
         self.add_filter("grayscale")
+        return self
 
     @chain
     def quality(self, amount: int) -> Self:
@@ -857,25 +873,29 @@ class BaseImagorThumbor(BaseImage):
             amount: Quality level from 0 to 100.
         """
         self.add_filter("quality", str(amount))
+        return self
 
     @chain
-    def format(self, fmt: str) -> Self:
+    def format(self, fmt: ImageFormats) -> Self:
         """Set the output format of the image.
 
         Args:
             fmt: Output format (e.g., 'jpeg', 'png', 'webp', 'gif').
         """
-        self.add_operation("format", fmt.lower())
+        self.add_filter("format", fmt.lower())
+        return self
 
     @chain
     def strip_exif(self) -> Self:
         """Remove EXIF metadata from the image."""
         self.add_filter("strip_exif")
+        return self
 
     @chain
     def strip_icc(self) -> Self:
         """Remove ICC profile from the image."""
         self.add_filter("strip_icc")
+        return self
 
     @chain
     def upscale(self, upscale: bool = True) -> Self:
@@ -889,6 +909,7 @@ class BaseImagorThumbor(BaseImage):
         else:
             self.remove("upscale")
             self.add_filter("no_upscale")
+        return self
 
     @chain
     def max_bytes(self, amount: int) -> Self:
@@ -898,6 +919,7 @@ class BaseImagorThumbor(BaseImage):
             amount: Maximum file size in bytes.
         """
         self.add_filter("max_bytes", amount)
+        return self
 
     @chain
     def proportion(self, percentage: float) -> Self:
@@ -908,6 +930,7 @@ class BaseImagorThumbor(BaseImage):
         """
         assert 0 <= percentage <= 100, "Percentage must be between 0 and 100"
         self.add_filter("proportion", round(percentage / 100, 1))
+        return self
 
     @chain
     def rotate(self, angle: int) -> Self:
@@ -921,6 +944,7 @@ class BaseImagorThumbor(BaseImage):
         if angle % 90 != 0:
             raise ValueError("Rotation angle must be a multiple of 90 degrees")
         self.add_filter("rotate", angle)
+        return self
 
     @chain
     def brightness(self, amount: float) -> Self:
@@ -930,6 +954,7 @@ class BaseImagorThumbor(BaseImage):
             amount: Adjustment amount (-100 to 100).
         """
         self.add_filter("brightness", str(amount))
+        return self
 
     @chain
     def contrast(self, amount: float) -> Self:
@@ -939,6 +964,7 @@ class BaseImagorThumbor(BaseImage):
             amount: Adjustment amount (-100 to 100).
         """
         self.add_filter("contrast", str(amount))
+        return self
 
     @chain
     def saturation(self, amount: float) -> Self:
@@ -948,16 +974,7 @@ class BaseImagorThumbor(BaseImage):
             amount: Adjustment amount (-100 to 100).
         """
         self.add_filter("saturation", str(amount))
-
-    @chain
-    def sharpen(self, sigma: float, amount: float = 1.0) -> Self:
-        """Sharpen the image.
-
-        Args:
-            sigma: Standard deviation of the gaussian kernel.
-            amount: Strength of the sharpening effect.
-        """
-        self.add_filter("sharpen", f"{sigma},{amount}")
+        return self
 
 
 if __name__ == "__main__":

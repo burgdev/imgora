@@ -48,17 +48,18 @@ class Imagor(BaseImagorThumbor):
             and right is not None
             and bottom is not None
         ):
-            left = f"{left:.3f}" if isinstance(left, float) else str(left)
-            top = f"{top:.3f}" if isinstance(top, float) else str(top)
-            right = f"{right:.3f}" if isinstance(right, float) else str(right)
-            bottom = f"{bottom:.3f}" if isinstance(bottom, float) else str(bottom)
-            self.add_filter("focal", f"{left}x{top}:{right}x{bottom}")
+            left_str = f"{left:.3f}" if isinstance(left, float) else str(left)
+            top_str = f"{top:.3f}" if isinstance(top, float) else str(top)
+            right_str = f"{right:.3f}" if isinstance(right, float) else str(right)
+            bottom_str = f"{bottom:.3f}" if isinstance(bottom, float) else str(bottom)
+            self.add_filter("focal", f"{left_str}x{top_str}:{right_str}x{bottom_str}")
         else:
             raise ValueError(
                 "'left', 'top' or 'left', 'top', 'right', 'bottom' must be specified"
             )
         self.add_operation("smart")
         self.remove("fit-in")
+        return self
 
     @chain
     def page(self, num: int) -> Self:
@@ -68,6 +69,7 @@ class Imagor(BaseImagorThumbor):
             num: Page number (1-based index).
         """
         self.add_filter("page", num)
+        return self
 
     @chain
     def dpi(self, dpi: int) -> Self:
@@ -77,6 +79,7 @@ class Imagor(BaseImagorThumbor):
             dpi: Dots per inch.
         """
         self.add_filter("dpi", dpi)
+        return self
 
     @chain
     def orient(self, angle: int) -> Self:
@@ -90,6 +93,7 @@ class Imagor(BaseImagorThumbor):
         if angle % 90 != 0:
             raise ValueError("Rotation angle must be a multiple of 90 degrees")
         self.add_operation("orient", str(angle))
+        return self
 
     @chain
     def fill(self, color: str | Literal["blur", "auto", "none"] | None = None) -> Self:
@@ -101,6 +105,7 @@ class Imagor(BaseImagorThumbor):
         if color is None:
             color = "none"
         self.add_filter("fill", color)
+        return self
 
     @chain
     def hue(self, angle: int) -> Self:
@@ -111,10 +116,11 @@ class Imagor(BaseImagorThumbor):
         """
         assert 0 <= angle <= 359, "Angle must be between 0 and 359"
         self.add_filter("hue", angle)
+        return self
 
     @chain
     def round_corner(
-        self, rx: int, ry: Optional[int] = None, color: str | None = None
+        self, rx: int, ry: int | None = None, color: str | None = None
     ) -> Self:
         """Add rounded corners to the image.
 
@@ -125,13 +131,9 @@ class Imagor(BaseImagorThumbor):
         """
         if ry is None:
             ry = rx
-        color_fmt = (
-            f",{color.lstrip("#").lower()}"
-            if color not in [None, "none"]
-            else ",ffffff"
-        )
-
-        self.add_filter("round_corner", f"{rx},{ry}{color_fmt}")
+        color = "ffffff" if color is None or color == "none" else color.lstrip("#")
+        self.add_filter("round_corner", f"{rx},{ry},{color}")
+        return self
 
     @chain
     def watermark(
@@ -155,6 +157,7 @@ class Imagor(BaseImagorThumbor):
         """
         image = quote(image, safe="")
         self.add_filter("watermark", image, x, y, alpha, w_ratio, h_ratio)
+        return self
 
     @chain
     def label(
@@ -184,11 +187,13 @@ class Imagor(BaseImagorThumbor):
         if font is not None:
             args.append(font)
         self.add_filter("label", ",".join(args))
+        return self
 
     @chain
     def strip_metadata(self) -> Self:
         """Remove all metadata from the image."""
         self.add_filter("strip_metadata")
+        return self
 
     @chain
     def max_frames(self, n: int) -> Self:
@@ -198,11 +203,18 @@ class Imagor(BaseImagorThumbor):
             n: Maximum number of frames to keep.
         """
         self.add_operation("max_frames", str(n))
+        return self
 
     @chain
-    def upscale(self) -> Self:
-        """upscale the image if fit-in is used"""
-        self.add_filter("upscale")
+    def sharpen(self, sigma: float, amount: float = 1.0) -> Self:
+        """Sharpen the image.
+
+        Args:
+            sigma: Standard deviation of the gaussian kernel.
+            amount: Strength of the sharpening effect.
+        """
+        self.add_filter("sharpen", f"{sigma},{amount}")
+        return self
 
 
 if __name__ == "__main__":
