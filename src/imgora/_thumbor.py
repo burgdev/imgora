@@ -10,7 +10,7 @@ from typing import List, Literal, Self
 
 import requests
 from imgora._converter import color_html_to_rgb
-from imgora._core import BaseImagorThumbor, chain
+from imgora._core import BaseImagorThumbor, ImageFormats, chain
 
 
 class Thumbor(BaseImagorThumbor):
@@ -18,7 +18,7 @@ class Thumbor(BaseImagorThumbor):
 
     Filter documentation: https://thumbor.readthedocs.io/en/latest/filters.html"""
 
-    def get_size(self, original: bool = False) -> tuple[int | None, int | None]:
+    def get_size(self, original: bool = False) -> tuple[int, int]:
         """Returns the image size."""
         if original:
             other = self._clone()
@@ -70,12 +70,14 @@ class Thumbor(BaseImagorThumbor):
             self.add_filter("upscale")
         else:
             self.remove("upscale")
+        return self
 
     # ===== Filters =====
     @chain
     def auto_jpg(self) -> Self:
         """Automatically convert to JPEG (overwrite `AUTO_PNG_TO_JPG` variable)."""
         self.add_filter("autojpg")
+        return self
 
     @chain
     def convolution(
@@ -99,16 +101,19 @@ class Thumbor(BaseImagorThumbor):
         self.add_filter(
             "convolution", matrix_str, str(number_of_columns), str(normalize).lower()
         )
+        return self
 
     @chain
     def cover(self) -> Self:
         """This filter is used in GIFs to extract their first frame as the image to be used as cover."""
         self.add_filter("cover")
+        return self
 
     @chain
     def equalize(self) -> Self:
         """This filter equalizes the color distribution in the image."""
         self.add_filter("equalize")
+        return self
 
     @chain
     def extract_focal(self) -> Self:
@@ -116,6 +121,7 @@ class Thumbor(BaseImagorThumbor):
 
         [More information](https://thumbor.readthedocs.io/en/latest/extract_focal_points.html)"""
         self.add_filter("extract_focal")
+        return self
 
     @chain
     def fill(
@@ -136,6 +142,7 @@ class Thumbor(BaseImagorThumbor):
         self.add_filter(
             "fill", color.removeprefix("#").lower(), str(fill_transparent).lower()
         )
+        return self
 
     @chain
     def focal(
@@ -157,16 +164,14 @@ class Thumbor(BaseImagorThumbor):
             right: Right coordinate of the focal region, either in pixel or relative (float from 0 to 1).
             bottom: Bottom coordinate of the focal region, either in pixel or relative (float from 0 to 1).
         """
+        left = left or 0.5
+        top = top or 0.5
+
         if right is None and bottom is None:
             # point is not supported, create a very small area
             right = left + 0.01 if isinstance(left, float) else left + 1
             bottom = top + 0.01 if isinstance(top, float) else top + 1
-        if (
-            left is not None
-            and top is not None
-            and right is not None
-            and bottom is not None
-        ):
+        if right is not None and bottom is not None:
             # percent is not supported by thumbor, but we can calculate it
             if (
                 isinstance(left, float)
@@ -175,10 +180,10 @@ class Thumbor(BaseImagorThumbor):
                 or isinstance(bottom, float)
             ):
                 w, h = self.get_size(original=True)
-            left = f"{int(left * w)}" if isinstance(left, float) else str(left)
-            top = f"{int(top * h)}" if isinstance(top, float) else str(top)
-            right = f"{int(right * w)}" if isinstance(right, float) else str(right)
-            bottom = f"{int(bottom * h)}" if isinstance(bottom, float) else str(bottom)
+                left = int(left * w) if isinstance(left, float) else left
+                top = int(top * h) if isinstance(top, float) else top
+                right = int(right * w) if isinstance(right, float) else right
+                bottom = int(bottom * h) if isinstance(bottom, float) else bottom
             self.add_filter("focal", f"{left}x{top}:{right}x{bottom}")
         else:
             raise ValueError(
@@ -186,11 +191,12 @@ class Thumbor(BaseImagorThumbor):
             )
         self.add_operation("smart")
         self.remove("fit-in")
+        return self
 
     @chain
     def format(
         self,
-        fmt: Literal["jpeg", "jpg", "png", "webp", "gif"],
+        fmt: ImageFormats,
         quality: int | None = None,
     ) -> Self:
         """Convert the image to the specified format.
@@ -199,12 +205,14 @@ class Thumbor(BaseImagorThumbor):
             fmt: Output format (_jpeg_, _jpg_, _png_, _webp_, _gif_, etc.).
             quality: `1` to `100`. Quality setting for lossy formats (e.g. jpg, does nothing for _png_).
         """
+        fmt_str = fmt
         if fmt == "jpg":
-            fmt = "jpeg"
+            fmt_str = "jpeg"
         if quality is not None:
             assert 1 <= quality <= 100, "Quality must be between 1 and 100"
             self.add_filter("quality", quality)
-        self.add_filter("format", fmt)
+        self.add_filter("format", fmt_str)
+        return self
 
     @chain
     def noise(self, amount: int) -> Self:
@@ -215,6 +223,7 @@ class Thumbor(BaseImagorThumbor):
         """
         assert 0 <= amount <= 100, "Amount must be between 0 and 100"
         self.add_filter("noise", str(amount))
+        return self
 
     @chain
     def quality(self, amount: int) -> Self:
@@ -225,11 +234,13 @@ class Thumbor(BaseImagorThumbor):
         """
         assert 1 <= amount <= 100, "Quality must be between 1 and 100"
         self.add_filter("quality", amount)
+        return self
 
     @chain
     def red_eye(self) -> Self:
         """Automatically detect and correct red-eye in photos."""
         self.add_filter("redeye")
+        return self
 
     @chain
     def round_corner(
@@ -253,6 +264,7 @@ class Thumbor(BaseImagorThumbor):
             color = (255, 255, 255)  # white
             transparent = 1
         elif not isinstance(color, tuple):
+            assert color is not None
             color = color_html_to_rgb(color)
 
         if ry is not None and rx != ry:
@@ -261,6 +273,7 @@ class Thumbor(BaseImagorThumbor):
         else:
             radius = rx
         self.add_filter("round_corner", radius, *color, transparent)
+        return self
 
     @chain
     def saturation(self, amount: float) -> Self:
@@ -272,6 +285,7 @@ class Thumbor(BaseImagorThumbor):
         """
         assert -100 <= amount <= 100, "Amount must be between -100 and 100"
         self.add_filter("saturation", str(amount))
+        return self
 
     @chain
     def sharpen(
@@ -285,17 +299,20 @@ class Thumbor(BaseImagorThumbor):
             luminance_only: Whether to only sharpen the luminance channel.
         """
         self.add_filter("sharpen", amount, radius, str(luminance_only).lower())
+        return self
 
     @chain
     def stretch(self) -> Self:
         """This filter stretches the image until it fits the required width and height, instead of cropping the image."""
         self.add_filter("stretch")
+        return self
 
     @chain
     def strip_metadata(self) -> Self:
         """Remove all metadata from the image."""
         self.add_filter("strip_exif")
         self.add_filter("strip_icc")
+        return self
 
     @chain
     def upscale(self, upscale: bool = True) -> Self:
@@ -309,6 +326,7 @@ class Thumbor(BaseImagorThumbor):
         else:
             self.remove("no_upscale")
             self.add_filter("no_upscale")
+        return self
 
 
 if __name__ == "__main__":

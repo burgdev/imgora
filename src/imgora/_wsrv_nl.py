@@ -6,6 +6,7 @@ functionality on top of the base image processing operations.
 
 from __future__ import annotations
 
+import warnings
 from typing import Literal, Self
 
 from imgora._core import HALIGN, VALIGN, BaseImage
@@ -34,14 +35,11 @@ class WsrvNl(BaseImage):
 
     def path(
         self,
-        unsafe: bool = False,
         with_image: str | None = None,
         encode_image: bool = True,
         signer: Signer | None = None,
     ) -> str:
-        with_image = (with_image or "" if self._image is None else self._image).strip(
-            "/"
-        )
+        with_image = (with_image or "" if not self._image else self._image).strip("/")
         if encode_image:
             with_image = self.encode_image_path(with_image)
         filters = self._filters
@@ -60,7 +58,10 @@ class WsrvNl(BaseImage):
         self,
         width: int,
         height: int,
-        method: Literal["fit-in", "stretch", "smart", "focal"] | None = None,
+        method: Literal[
+            "fit-in", "stretch", "smart", "focal", "cover", "inside", "fill"
+        ]
+        | None = None,
         upscale: bool = True,
     ) -> Self:
         """Resize the image to the exact dimensions.
@@ -94,6 +95,7 @@ class WsrvNl(BaseImage):
         self.add_filter("h", height)
         if not upscale:
             self.add_filter("we")
+        return self
 
     @chain
     def crop(
@@ -157,11 +159,13 @@ class WsrvNl(BaseImage):
         if prcrop:
             self.add_filter("precrop")
         # self.add_filter("fit", "cover")
+        return self
 
     @chain
     def grayscale(self) -> Self:
         """Convert the image to grayscale."""
         self.add_filter("filt", "greyscale")
+        return self
 
     @chain
     def upscale(self, upscale: bool = True) -> Self:
@@ -175,6 +179,7 @@ class WsrvNl(BaseImage):
             self.remove("we")
         else:
             self.add_filter("we")
+        return self
 
     @chain
     def rotate(self, angle: int | None = None) -> Self:
@@ -187,7 +192,9 @@ class WsrvNl(BaseImage):
         """
         if angle is None:
             self.add_filter("ro")
+        assert angle is not None
         self.add_filter("ro", -angle)
+        return self
 
     @chain
     def background_color(self, color: str) -> Self:
@@ -198,10 +205,11 @@ class WsrvNl(BaseImage):
             color: Background color in hex format without # or 'auto' (e.g., 'FFFFFF', 'aab').
         """
         self.add_filter("bg", color.removeprefix("#").lower())
+        return self
 
     # ===== Filters =====
     @chain
-    def blur(self, radius: int | None = None, sigma: int | None = None) -> Self:
+    def blur(self, radius: int | None = None, sigma: int | float | None = None) -> Self:
         """Apply gaussian blur to the image.
 
         Args:
@@ -211,11 +219,13 @@ class WsrvNl(BaseImage):
         if radius is None and sigma is None:
             self.add_filter("blur")
         elif sigma is None:
+            assert radius is not None, "Radius must be set if sigma is not set"
             sigma = 1 + radius / 2
             self.add_filter("blur", f"{sigma:.2f}")
         else:
             assert radius is None, "Radius must be None if sigma is set"
             self.add_filter("blur", f"{sigma:.2f}")
+        return self
 
     @chain
     def contrast(self, amount: int) -> Self:
@@ -227,6 +237,7 @@ class WsrvNl(BaseImage):
         """
         assert -100 <= amount <= 100, "Amount must be between -100 and 100"
         self.add_filter("con", amount)
+        return self
 
     @chain
     def sharpen(
@@ -250,6 +261,7 @@ class WsrvNl(BaseImage):
                 self.add_filter("sharpf", flat)
             if jagged is not None:
                 self.add_filter("sharpj", jagged)
+        return self
 
     @chain
     def focal(
@@ -282,12 +294,13 @@ class WsrvNl(BaseImage):
             if isinstance(bottom, int):
                 top = int(top)
         if left is not None:
-            left = f"{left:.3f}" if isinstance(left, float) else str(left)
-            self.add_filter("fpx", left)
+            left_str = f"{left:.3f}" if isinstance(left, float) else str(left)
+            self.add_filter("fpx", left_str)
         if top is not None:
-            top = f"{top:.3f}" if isinstance(top, float) else str(top)
-            self.add_filter("fpy", top)
+            top_str = f"{top:.3f}" if isinstance(top, float) else str(top)
+            self.add_filter("fpy", top_str)
         self.add_filter("a", "focal")
+        return self
 
     @chain
     def format(
@@ -311,6 +324,7 @@ class WsrvNl(BaseImage):
         if filename:
             self.add_filter("filename", filename)
         self.add_filter("output", fmt)
+        return self
 
     @chain
     def round_corner(
@@ -326,7 +340,8 @@ class WsrvNl(BaseImage):
             ry: Y radius of the corners in pixels (not supported at the moment).
             color: Corner color in CSS format (default: "none"), if none is used transparent background is used if possible.
         """
-        pass
+        warnings.warn("wsrv.nl does not support rounded corners.")
+        return self
 
     @chain
     def meta(
@@ -334,6 +349,7 @@ class WsrvNl(BaseImage):
     ) -> Self:
         """Shows meta information of the image."""
         self.add_filter("output", "json")
+        return self
 
 
 if __name__ == "__main__":

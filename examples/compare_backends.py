@@ -388,9 +388,9 @@ def create_sample_comparison():
         "https://wsrv.nl/lichtenstein.jpg",
         "https://wsrv.nl/puppy.jpg",
         "https://wsrv.nl/transparency_demo.png",
-        # "https://upload.wikimedia.org/wikipedia/commons/2/2c/Kalahari_lion_%28Panthera_leo%29_male_cub_4_months.jpg",
-        # "https://raw.githubusercontent.com/cshum/imagor/master/testdata/dancing-banana.gif",
-        # "https://media.inkscape.org/media/resources/file/Art_Bot.svg",
+        "https://upload.wikimedia.org/wikipedia/commons/2/2c/Kalahari_lion_%28Panthera_leo%29_male_cub_4_months.jpg",
+        "https://raw.githubusercontent.com/cshum/imagor/master/testdata/dancing-banana.gif",
+        "https://media.inkscape.org/media/resources/file/Art_Bot.svg",
     ]
 
     log.info("Setting up directories...")
