@@ -81,7 +81,7 @@ def install(
     if venv_update:
         update_venv(c)
     if group:
-        success(f"Group {', '.join([f"'{g}'" for g in group])} installed.")
+        success("Group " + ", ".join([f"'{g}'" for g in group]) + " installed.")
     success("Installation done, your are ready to go ...")
 
 
