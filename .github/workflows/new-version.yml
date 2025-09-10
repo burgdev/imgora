@@ -1,9 +1,10 @@
 name: New Version
 
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows: ["Main"]
+    types:
+      - complete
 
 jobs:
   check-and-tag:
