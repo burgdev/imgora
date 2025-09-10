@@ -65,6 +65,7 @@ test = [
     "pytest>=8.3.4",
     "pytest-cov>=4.1.0",
     "pytest-docker>=1.0.0",
+    "pytest-xdist>=3.8.0",
 ]
 
 

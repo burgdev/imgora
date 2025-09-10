@@ -1,13 +1,13 @@
 <h3 align="center"><b>Imgora</b></h3>
 <p align="center">
-  <a href="https://burgdev.github.io/imgora"><img src="assets/logo/logo.svg" alt="Imgora" width="128" /></a>
+  <a href="https://burgdev.github.io/imgora"><img src="https://raw.githubusercontent.com/burgdev/imgora/refs/heads/main/assets/logo/logo.svg" alt="Imgora" width="128" /></a>
 </p>
 <p align="center">
     <em>Chainable Python client for Imagor and Thumbor image processing servers</em>
 </p>
 <p align="center">
-    <b><a href="https://burgdev.github.io/imgora/docu/">Documentation</a></b>
-    | <b><a href="https://pypi.org/project/imgora/">PyPI</a></b>
+    <b><a href="https://burgdev.github.io/imgora">Documentation</a></b>
+    | <b><a href="https://pypi.org/project/imgora">PyPI</a></b>
 </p>
 
 ---

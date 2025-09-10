@@ -81,7 +81,7 @@ def install(
     if venv_update:
         update_venv(c)
     if group:
-        success(f"Group {', '.join([f"'{g}'" for g in group])} installed.")
+        success("Group " + ", ".join([f"'{g}'" for g in group]) + " installed.")
     success("Installation done, your are ready to go ...")
 
 
@@ -126,7 +126,7 @@ def release(
         if unreleased or length == 0:
             echo("\n".join(cl))
         else:
-            echo(f"{"\n".join(cl[:length])}\n...\n")
+            echo("\n".join(cl[:length]) + "\n...\n")
         header("Changelog end") if dry else None
     else:
         cl = (

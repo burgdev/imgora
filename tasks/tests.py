@@ -1,13 +1,13 @@
 from tasks import (
+    Ctx,
     doc,
     header,
     task,
-    Ctx,
 )
 
 
 @task
-def run(c: Ctx):
+def run(c: Ctx, parallel: bool = False):
     """Run tests"""
     header(doc())
-    c.run("pytest -v", echo=True, pty=True)
+    c.run("pytest -v" + (" -n auto" if parallel else ""), echo=True, pty=True)
