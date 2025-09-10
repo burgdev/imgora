@@ -1,10 +1,19 @@
 """Pytest configuration and fixtures for imgora tests."""
 
+from typing import TypedDict
+
 import pytest
 
 
+class ServiceConfig(TypedDict):
+    host: str
+    port: int
+    base_url: str
+    secret: str
+
+
 @pytest.fixture(scope="session")
-def imagor_service() -> dict:
+def imagor_service() -> ServiceConfig:
     """Get Imagor service configuration from docker-compose.
 
     Returns:
@@ -19,7 +28,7 @@ def imagor_service() -> dict:
 
 
 @pytest.fixture(scope="session")
-def thumbor_service() -> dict:
+def thumbor_service() -> ServiceConfig:
     """Get Thumbor service configuration from docker-compose.
 
     Returns:
