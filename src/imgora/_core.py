@@ -11,7 +11,7 @@ import hashlib
 import hmac
 from abc import ABC
 from dataclasses import dataclass, field
-from typing import Any, Iterable, List, Literal, Self
+from typing import Any, Iterable, List, Literal, Self, TypeAlias
 from urllib.parse import quote
 
 import requests
@@ -89,6 +89,27 @@ class Signer:
         if self._key is None:
             return True
         return self._unsafe
+
+
+HALIGN: TypeAlias = Literal["left", "center", "right"]
+"""Horizontal alignment values type."""
+
+VALIGN: TypeAlias = Literal["top", "middle", "bottom"]
+"""Vertical alignment values type."""
+
+
+@dataclass
+class CropValues:
+    left: int
+    top: int
+    right: int
+    bottom: int
+    image_width: int
+    image_height: int
+    crop_width: int
+    crop_height: int
+    halign: HALIGN
+    valign: VALIGN
 
 
 # /HASH|unsafe/trim/AxB:CxD/fit-in/stretch/-Ex-F/GxH:IxJ/HALIGN/VALIGN/smart/filters:NAME(ARGS):NAME(ARGS):.../IMAGE
@@ -238,7 +259,6 @@ class BaseImage(ABC):
         """Generate the URL path with all operations and filters applied.
 
         Args:
-            unsafe: If True, skip URL signing even if a key is configured.
             with_image: The image to use. If None, the default image is used.
             encode_image: Whether to encode the image path.
             signer: The signer to use. If None the default is used.
@@ -258,7 +278,6 @@ class BaseImage(ABC):
 
         Args:
             with_image: The image to use. If None, the default image is used.
-            unsafe: If True, skip URL signing even if a key is configured.
             with_base: The base URL to use. If None, the default base URL is used.
             signer: The signer to use. If None the default is used.
 
@@ -385,11 +404,16 @@ class BaseImage(ABC):
             self.add_operation("filters", "filters:" + ":".join(filters))
         return bool(filters)
 
-    @property
-    def size(self) -> tuple[int | None, int | None]:
+    def get_size(self, original: bool = False) -> tuple[int | None, int | None]:
         """Returns the image size."""
         # TODO use original image to get size??
-        _url = self.meta().url()
+        if original:
+            other = self._clone()
+            other.remove_operations()
+            other.remove_filters()
+            _url = other.meta().url()
+        else:
+            _url = self.meta().url()
         img = requests.get(
             _url, headers={"User-Agent": "imgora (https://github.com/burgdev/imgora)"}
         )
@@ -406,16 +430,17 @@ class BaseImage(ABC):
         """Trim the image."""
         self.add_operation("trim")
 
-    @chain
-    def crop(
+    def _get_crop_values(
         self,
-        left: int | float,
-        top: int | float,
-        right: int | float,
-        bottom: int | float,
-        halign: Literal["left", "center", "right"] | None = None,
-        valign: Literal["top", "middle", "bottom"] | None = None,
-    ) -> Self:
+        left: int | float | None = None,
+        top: int | float | None = None,
+        right: int | float | None = None,
+        bottom: int | float | None = None,
+        width: int | float | None = None,
+        height: int | float | None = None,
+        halign: HALIGN | None = None,
+        valign: VALIGN | None = None,
+    ) -> CropValues:
         """Crop the image. Coordinates are in pixel or float values between 0 and 1 (percentage of image dimensions)
 
         Args:
@@ -426,11 +451,151 @@ class BaseImage(ABC):
             halign: Horizontal alignment of the crop (left, center, right).
             valign: Vertical alignment of the crop (top, middle, bottom).
         """
-        self.add_operation("crop", f"{left}x{top}:{right}x{bottom}")
-        if halign:
-            self.add_operation("halign", halign)
-        if valign:
-            self.add_operation("valign", valign)
+        image_width, image_height = self.get_size(original=True)
+        # convert percentages to pixel
+        left = int(image_width * left) if isinstance(left, float) else left
+        top = int(image_height * top) if isinstance(top, float) else top
+        right = int(image_width * right) if isinstance(right, float) else right
+        bottom = int(image_height * bottom) if isinstance(bottom, float) else bottom
+
+        # convert negative coordinates
+        right = image_width + right if isinstance(right, int) and right < 0 else right
+        bottom = (
+            image_height + bottom if isinstance(bottom, int) and bottom < 0 else bottom
+        )
+
+        if (
+            left is not None
+            and top is not None
+            and right is not None
+            and bottom is not None
+        ):
+            pass  # do nothing
+        elif (
+            width is not None
+            and height is not None
+            and left is not None
+            and top is not None
+        ):
+            right = left + width
+            bottom = top + height
+        elif (
+            width is not None
+            and height is not None
+            and right is not None
+            and bottom is not None
+        ):
+            left = right - width
+            top = bottom - height
+        elif (
+            width is not None
+            and height is not None
+            and left is not None
+            and right is not None
+        ):
+            middle_x = int(image_width / 2)
+            middle_y = int(image_height / 2)
+            if halign in ["center", None]:
+                left = middle_x - int(width / 2)
+                right = middle_x + int(width / 2)
+            elif halign == "left":
+                left = 0
+                right = width
+            elif halign == "right":
+                left = image_width - width
+                right = image_width
+            if valign in ["middle", None]:
+                top = middle_y - int(height / 2)
+                bottom = middle_y + int(height / 2)
+            elif valign == "top":
+                top = 0
+                bottom = height
+            elif valign == "bottom":
+                top = image_height - height
+                bottom = image_height
+        else:
+            raise ValueError(
+                "Either 'left', 'top', 'right', 'bottom' or 'width', 'height' must be specified"
+            )
+
+        crop_width = right - left
+        crop_height = bottom - top
+        return CropValues(
+            left=left,
+            top=top,
+            right=right,
+            bottom=bottom,
+            image_width=image_width,
+            image_height=image_height,
+            crop_width=crop_width,
+            crop_height=crop_height,
+            halign=halign,
+            valign=valign,
+        )
+
+    @chain
+    def crop(
+        self,
+        left: int | float | None = None,
+        top: int | float | None = None,
+        right: int | float | None = None,
+        bottom: int | float | None = None,
+        width: int | float | None = None,
+        height: int | float | None = None,
+        halign: HALIGN | None = None,
+        valign: VALIGN | None = None,
+    ) -> Self:
+        """Crop the image. Coordinates are in pixel or float values between 0 and 1 (percentage of image dimensions)
+        The coordiantes start in the top/left corner and go down and right.
+
+        Args:
+            left: Left coordinate of the crop (pixel or relative).
+            top: Top coordinate of the crop (pixel or relative).
+            right: Right coordinate of the crop (pixel or relative), can be negative.
+            bottom: Bottom coordinate of the crop (pixel or relative), can be negative.
+            width: Width of the crop (pixel or relative).
+            height: Height of the crop (pixel or relative).
+            halign: Horizontal alignment of the crop (left, center, right).
+            valign: Vertical alignment of the crop (top, middle, bottom).
+
+        !!! Examples
+            === "Code"
+                ```python
+                img.crop(left=5, top=2, right=10, bottom=4)
+                img.crop(left=5, top=2, right=-4, bottom=-2)
+                img.crop(left=5, top=2, width=5, height=2)
+                img.crop(left=0.3, top=0.42, width=0.5, height=0.4)
+                ```
+            === "Coordinate System"
+                ```
+                  0    5    10          x
+                0 *=============*------->
+                  #    .    .   #
+                2 #....+~~~~~+  #
+                  # . .|     |  #
+                4 # . .+~~~~~+  #
+                  *=============*
+                  |
+                y v
+                ```
+
+
+        """
+        crop = self._get_crop_values(
+            left=left,
+            top=top,
+            right=right,
+            bottom=bottom,
+            width=width,
+            height=height,
+            halign=halign,
+            valign=valign,
+        )
+        self.add_operation("crop", f"{crop.left}x{crop.top}:{crop.right}x{crop.bottom}")
+        # if halign:
+        #    self.add_operation("halign", halign)
+        # if valign:
+        #    self.add_operation("valign", valign)
 
     @chain
     def fit_in(self, width: int, height: int) -> Self:
@@ -583,7 +748,6 @@ class BaseImagorThumbor(BaseImage):
         """Generate the URL path with all operations and filters applied.
 
         Args:
-            unsafe: If True, skip URL signing even if a key is configured.
             with_image: The image to use. If None, the default image is used.
             encode_image: Whether to encode the image path.
             signer: The signer to use. If None the default is used.

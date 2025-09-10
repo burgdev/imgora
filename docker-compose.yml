@@ -7,7 +7,7 @@ services:
       - PORT=8000
       - DEBUG=1
       - IMAGOR_SECRET=my_key
-      - IMAGOR_UNSAFE=0
+      - IMAGOR_UNSAFE=1
       - IMAGOR_SIGNER_TYPE=sha256
       # - IMAGOR_SIGNER_TRUNCATE=40
 
@@ -17,4 +17,4 @@ services:
       - "8019:80"
     environment:
       - SECURITY_KEY=my_key
-      - ALLOW_UNSAFE_URL=0
+      - ALLOW_UNSAFE_URL=1

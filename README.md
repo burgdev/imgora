@@ -11,6 +11,7 @@
 </p>
 
 ---
+<!-- # --8<-- [start:readme_index] <!-- -->
 
 **Imgora** provides a clean, chainable interface for generating image URLs for [Imagor](https://github.com/cshum/imagor), [Thumbor](https://github.com/thumbor/thumbor) and [Wsrv.nl](https://wsrv.nl) image processing servers. It supports all standard operations and filters with full type hints and documentation.
 
@@ -37,41 +38,66 @@ pip install imgora
 ## Quick Start
 
 ```python
-from imgora import Imagor
+from imgora import WsrvNl
 
-# Create and configure an image processor
+image_url = "https://wsrv.nl/puppy.jpg"
+
 img = (
-    Imagor(key="my_key")
-    .with_base("http://localhost:8018")
-    .with_image("https://wsrv.nl/puppy.jpg")
-    .fit_in(300, 300)
+    # Imagor(base_url="http://localhost:8018", signer=Signer(key="my_key", type="sha256"))
+    WsrvNl()
+    .with_image(image_url)
+    .crop(0.1, 0.2, 0.6, -100)
+    .resize(200, 150)
     .blur(3)
+    .grayscale()
+    .quality(50)
 )
 
-# Generate the URL
-url = img.url()
-print(f"Generated URL: {url}")
+# print(img.path()) # path without url
+print(img.url())
+```
+Which returns:
+
+```
+https://wsrv.nl/?url=https%3A%2F%2Fwsrv.nl%2Fpuppy.jpg&cx=166&cy=221&cw=831&ch=787&precrop&w=200&h=150&blur=2.50&filt=greyscale&quality=50
 ```
 
-In order to test the url you need to start an Imagor server.
+
+<figure>
+<a href="https://wsrv.nl/?url=https%3A%2F%2Fwsrv.nl%2Fpuppy.jpg&cx=166&cy=221&cw=831&ch=787&precrop&w=200&h=150&blur=2.50&filt=greyscale&quality=50" target="_blank">
+    <img src="https://wsrv.nl/?url=https%3A%2F%2Fwsrv.nl%2Fpuppy.jpg&cx=166&cy=221&cw=831&ch=787&precrop&w=200&h=150&blur=2.50&filt=greyscale&quality=50" />
+</a>
+    <figcaption>Processed image</figcaption>
+</figure>
+<figure>
+<a href="https://wsrv.nl/puppy.jpg" target="_blank">
+    <img src="https://wsrv.nl/puppy.jpg" width="400" />
+</a>
+    <figcaption><a href="https://wsrv.nl/puppy.jpg" target="_blank">Original image</a> (width reduced to 400px)</figcaption>
+</figure>
+**NOTE:**
+
+In order to test the url with Imagor or Thumbor you need to start a server.
 You can do this with the following command:
 
 ```bash
 docker compose up imagor -d
+docker compose up thumbor -d
 ```
 
-Run the example script:
+### More Examples
 
 ```bash
 docker compose up -d # start imagor and thumbor server
-uv run examples/compare_backends_advanced.py
+uv run examples/compare_backends.py
 ```
-
+<!-- # --8<-- [end:readme_index] <!-- -->
 
 ## Documentation
 
 For complete documentation, including API reference and advanced usage, please visit the [documentation site](https://burgdev.github.io/imgora/docu/).
 
+<!-- # --8<-- [start:readme_development] <!-- -->
 ## Development
 
 To set up the development environment:
@@ -85,6 +111,7 @@ cd imgora
 make
 uv run invoke install # install 'dev' and 'test' dependencies per default, use --all to install all dependencies
 ```
+<!-- # --8<-- [end:readme_development] <!-- -->
 
 ## Contributing
 

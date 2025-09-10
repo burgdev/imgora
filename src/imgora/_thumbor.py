@@ -1,4 +1,4 @@
-"""Thumbor-specific image processing operations and filters.
+"""[Thumbor](https://www.thumbor.org)-specific image processing operations and filters.
 
 This module provides the Thumbor class, which implements Thumbor-specific
 functionality on top of the base image processing operations.
@@ -14,14 +14,20 @@ from imgora._core import BaseImagorThumbor, chain
 
 
 class Thumbor(BaseImagorThumbor):
-    """Thumbor image processor with Thumbor-specific operations and filters.
+    """[Thumbor](https://www.thumbor.org) image processor with Thumbor-specific operations and filters.
 
     Filter documentation: https://thumbor.readthedocs.io/en/latest/filters.html"""
 
-    @property
-    def size(self) -> tuple[int | None, int | None]:
+    def get_size(self, original: bool = False) -> tuple[int | None, int | None]:
         """Returns the image size."""
-        img = requests.get(self.meta().url())
+        if original:
+            other = self._clone()
+            other.remove_operations()
+            other.remove_filters()
+            _url = other.meta().url()
+        else:
+            _url = self.meta().url()
+        img = requests.get(_url)
         info = img.json().get("thumbor", {}).get("source", {})
         _width = info.get("width")
         _height = info.get("height")

@@ -1,4 +1,4 @@
-"""Imagor-specific image processing operations and filters.
+"""[Imagor](https://github.com/cshum/imagor)-specific image processing operations and filters.
 
 This module provides the Imagor class, which implements Imagor-specific
 functionality on top of the base image processing operations.
@@ -13,7 +13,7 @@ from imgora._core import BaseImagorThumbor, chain
 
 
 class Imagor(BaseImagorThumbor):
-    """Imagor image processor with Imagor-specific operations and filters."""
+    """[Imagor](https://github.com/cshum/imagor) image processor with Imagor-specific operations and filters."""
 
     # ===== Operations =====
     @chain

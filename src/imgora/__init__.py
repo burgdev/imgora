@@ -18,6 +18,8 @@ Example:
 """
 
 from imgora._core import (
+    HALIGN,  # noqa: F401
+    VALIGN,  # noqa: F401
     BaseImage,  # noqa: F401
     Filter,  # noqa: F401
     Operation,  # noqa: F401
@@ -28,4 +30,14 @@ from imgora._thumbor import Thumbor  # noqa: F401
 from imgora._wsrv_nl import WsrvNl  # noqa: F401
 
 __version__ = "0.0.1"
-__all__ = ["Imagor", "Thumbor", "Signer", "BaseImage", "Filter", "Operation"]
+__all__ = [
+    "Imagor",
+    "Thumbor",
+    "WsrvNl",
+    "Signer",
+    "BaseImage",
+    "Filter",
+    "Operation",
+    "HALIGN",
+    "VALIGN",
+]

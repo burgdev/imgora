@@ -1,6 +1,6 @@
-"""Imagor-specific image processing operations and filters.
+"""[wsrv.nl](https://wsrv.nl)-specific image processing operations and filters.
 
-This module provides the Imagor class, which implements Imagor-specific
+This module provides the wsrv.nl class, which implements wsrv.nl-specific
 functionality on top of the base image processing operations.
 """
 
@@ -8,12 +8,28 @@ from __future__ import annotations
 
 from typing import Literal, Self
 
-from imgora._core import BaseImage
+from imgora._core import HALIGN, VALIGN, BaseImage
 from imgora.decorator import chain
 
 
 class WsrvNl(BaseImage):
-    """weserve.nl image processor with weserve-specific operations and filters."""
+    """[wsrv.nl](https://wsrv.nl) image processor with wsrv-specific operations and filters."""
+
+    def __init__(
+        self,
+        base_url: str = "",
+        image: str = "",
+        signer: Signer | None = None,
+    ) -> None:
+        """Initialize a new image processor.
+
+        Args:
+            base_url: Base URL of the Imagor/Thumbor server.
+            image: Path or URL of the source image.
+            signer: The signer to use. Not needed for wsrv.nl.
+        """
+        base_url = base_url or "https://wsrv.nl"
+        super().__init__(base_url, image)
 
     def path(
         self,
@@ -70,29 +86,62 @@ class WsrvNl(BaseImage):
         #    "attention",
         # ] = "center",
         # fit: Literal["cover", "contain"] = "cover",
-        left: int | float,
-        top: int | float,
-        right: int | float,
-        bottom: int | float,
-        # halign: Literal["left", "center", "right"] | None = None,
-        # valign: Literal["top", "middle", "bottom"] | None = None,
+        left: int | float | None = None,
+        top: int | float | None = None,
+        right: int | float | None = None,
+        bottom: int | float | None = None,
+        width: int | float | None = None,
+        height: int | float | None = None,
+        halign: HALIGN | None = None,
+        valign: VALIGN | None = None,
         prcrop: bool = True,
     ) -> Self:
         """Crop the image. Coordinates are in pixel or float values between 0 and 1 (percentage of image dimensions)
+        The coordiantes start in the top/left corner and go down and right.
+
+        Coordinate system:
+
+                0    5    10          x
+              0 *=============*------->
+                #    .    .   #
+              2 #....+~~~~~+  #
+                # . .|     |  #
+              4 # . .+~~~~~+  #
+                *=============*
+                |
+              y v
+
+        ```python
+        img.crop(left=5, top=2, right=10, bottom=4)
+        img.crop(left=5, top=2, right=-4, bottom=-2)
+        img.crop(left=5, top=2, width=5, height=2)
+        img.crop(left=0.3, top=0.42, width=0.5, height=0.4)
+        ```
 
         Args:
             left: Left coordinate of the crop (pixel or relative).
             top: Top coordinate of the crop (pixel or relative).
-            right: Right coordinate of the crop (pixel or relative).
-            bottom: Bottom coordinate of the crop (pixel or relative).
+            right: Right coordinate of the crop (pixel or relative), can be negative.
+            bottom: Bottom coordinate of the crop (pixel or relative), can be negative.
+            width: Width of the crop (pixel or relative).
+            height: Height of the crop (pixel or relative).
             halign: Horizontal alignment of the crop (left, center, right).
             valign: Vertical alignment of the crop (top, middle, bottom).
         """
-        w, h = self.size
-        self.add_filter("cx", left)
-        self.add_filter("cy", top)
-        self.add_filter("cw", w - left - right)
-        self.add_filter("ch", h - top - bottom)
+        crop = self._get_crop_values(
+            left=left,
+            top=top,
+            right=right,
+            bottom=bottom,
+            width=width,
+            height=height,
+            halign=halign,
+            valign=valign,
+        )
+        self.add_filter("cx", crop.left)
+        self.add_filter("cy", crop.top)
+        self.add_filter("cw", crop.crop_width)
+        self.add_filter("ch", crop.crop_height)
         if prcrop:
             self.add_filter("precrop")
         # self.add_filter("fit", "cover")
@@ -116,6 +165,11 @@ class WsrvNl(BaseImage):
         self.add_filter("fit", fit)
         if not upscale:
             self.add_filter("we")
+
+    @chain
+    def grayscale(self) -> Self:
+        """Convert the image to grayscale."""
+        self.add_filter("filt", "greyscale")
 
     @chain
     def upscale(self) -> Self:

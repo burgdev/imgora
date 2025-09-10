@@ -73,7 +73,7 @@ class TransformResult:
 
 @dataclass
 class Transformation:
-    name: Optional[str] = field(default=None, repr=False)  # temporary input
+    title: Optional[str] = field(default=None, repr=False)  # temporary input
     description: str = ""
     operations: List[Operation] = field(default_factory=list)
 
@@ -82,8 +82,8 @@ class Transformation:
 
     def __post_init__(self):
         # Move the user-provided name into the hidden field
-        self._name = self.name
-        self.name = None  # avoid confusion — we'll always go through the property
+        self._name = self.title
+        self.title = None  # avoid confusion — we'll always go through the property
 
     @property
     def name(self) -> str:  # type: ignore  # noqa: F811
@@ -180,9 +180,8 @@ class ImageComparator:
         Returns:
             self for method chaining
         """
-        name = name or ", ".join(step.title for step in operations)
         self.transformations.append(
-            Transformation(name=name, description=description, operations=operations)
+            Transformation(title=name, description=description, operations=operations)
         )
         return self
 
@@ -285,7 +284,7 @@ class ImageComparator:
             log.info(f"Processing '{source_url}'")
             # Prepare results structure
             results = {}
-            for transform in self.transformations:
+            for idx, transform in enumerate(self.transformations):
                 # Convert each step to its string representation
                 step_strings = []
                 for step in transform.operations:
@@ -304,7 +303,7 @@ class ImageComparator:
                 # Join all steps into a single string
                 all_steps = "".join(step_strings)
 
-                results[transform.name] = {
+                results[f"{transform.name}_{idx}"] = {
                     "name": transform.name,
                     "description": transform.description,
                     "steps": all_steps,  # Single string with all steps
@@ -323,16 +322,17 @@ class ImageComparator:
                     backend = backend_class(image=source_url, **backend_kwargs)
 
                     # Run each transformation
-                    for transform in self.transformations:
-                        transform_name = transform.name
+                    for idx, transform in enumerate(self.transformations):
                         result = self._run_transform(backend, transform.operations)
-                        results[transform_name]["results"][backend_name] = result
+                        results[f"{transform.name}_{idx}"]["results"][backend_name] = (
+                            result
+                        )
 
                 except Exception as e:
                     log.error(f"Error initializing backend {backend_name}: {str(e)}")
                     # Add error to all transformations for this backend
-                    for transform in self.transformations:
-                        results[transform.name]["results"][backend_name] = {
+                    for idx, transform in enumerate(self.transformations):
+                        results[f"{transform.name}_{idx}"]["results"][backend_name] = {
                             "success": False,
                             "error": str(e),
                             "traceback": traceback.format_exc(),
@@ -400,9 +400,9 @@ def create_sample_comparison():
         "https://wsrv.nl/lichtenstein.jpg",
         "https://wsrv.nl/puppy.jpg",
         "https://wsrv.nl/transparency_demo.png",
-        "https://upload.wikimedia.org/wikipedia/commons/2/2c/Kalahari_lion_%28Panthera_leo%29_male_cub_4_months.jpg",
-        "https://raw.githubusercontent.com/cshum/imagor/master/testdata/dancing-banana.gif",
-        "https://media.inkscape.org/media/resources/file/Art_Bot.svg",
+        # "https://upload.wikimedia.org/wikipedia/commons/2/2c/Kalahari_lion_%28Panthera_leo%29_male_cub_4_months.jpg",
+        # "https://raw.githubusercontent.com/cshum/imagor/master/testdata/dancing-banana.gif",
+        # "https://media.inkscape.org/media/resources/file/Art_Bot.svg",
     ]
 
     log.info("Setting up directories...")
@@ -448,10 +448,44 @@ def create_sample_comparison():
     # Basic resize
     comparator.add_transformation(
         [
-            Operation("resize", width=300, height=200, crop="smart"),
+            Operation("resize", width=300, height=200),
         ],
-        name="resize_300x200_smart",
-        description="Basic resize to 300x200 with smart crop",
+        description="Basic resize to 300x200",
+    )
+
+    comparator.add_transformation(
+        operations=[
+            resize_step,
+            Operation("crop", left=50, top=200, right=-20, bottom=-100),
+        ],
+        name="Crop from borders (negative)",
+        description="Crop from left, top, negative right and negative bottom",
+    )
+
+    comparator.add_transformation(
+        operations=[
+            resize_step,
+            Operation("crop", left=50, top=200, right=400, bottom=400),
+        ],
+        name="Crop from borders",
+        description="Crop from left, top, right and bottom",
+    )
+    comparator.add_transformation(
+        operations=[
+            resize_step,
+            Operation("crop", left=50, top=200, width=400, height=400),
+        ],
+        name="Crop with width and height (left/top)",
+        description="Crop from left, top, width and height",
+    )
+    comparator.add_transformation(
+        operations=[
+            resize_step,
+            Operation("crop", right=-50, bottom=-50, width=400, height=400),
+            Operation("trim"),
+        ],
+        name="Crop with width and height (righ/bottom)",
+        description="Crop from right, bottom, width and height",
     )
 
     # 1. Simple resize
@@ -481,7 +515,7 @@ def create_sample_comparison():
     comparator.add_transformation(
         operations=[
             resize_step,
-            Operation("crop", 50, 80, 20, 100),
+            Operation("crop", 50, 200, -20, -100),
             # Operation("trim"),
         ],
     )

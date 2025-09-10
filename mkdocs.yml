@@ -5,12 +5,11 @@ repo_url: https://github.com/burgdev/imgora
 repo_name: burgdev/imgora
 
 nav:
-  - "Home": index.md
-  - "Getting Started": docu.md
-  - "<i>imgora</i>": cli.md
-  - Packages: packages.md
+  - "Getting Started": index.md
+  #- "<i>imgora</i>": cli.md
   - API Reference:
       - imgora: reference/
+  - Packages: packages.md
   - Changelog: changelog.md
 
 extra:
@@ -191,5 +190,6 @@ markdown_extensions:
 
 watch:
   - src
+  - README.md
 extra_css:
   - css/custom.css
