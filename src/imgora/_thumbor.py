@@ -38,28 +38,38 @@ class Thumbor(BaseImagorThumbor):
     # ===== Operations =====
     # compared to imagor it adds method as well.
     @chain
-    def fit_in(
-        self, width: int, height: int, method: Literal["full", "adaptive"] | None = None
+    def resize(
+        self,
+        width: int,
+        height: int,
+        method: Literal["fit-in", "stretch", "smart", "focal"] | None = None,
+        upscale: bool = True,
     ) -> Self:
-        """Fit the image within the specified dimensions while preserving aspect ratio.
-
-        Fit-in means that the generated image should not be auto-cropped and otherwise just fit in an imaginary box specified by `ExF`.
-        If a `full` fit-in is specified, then the largest size is used for cropping (width instead of height, or the other way around).
-        If `adaptive` fit-in is specified, it inverts requested width and height if it would get a better image definition;
+        """Resize the image to the exact dimensions.
 
         Args:
-            width: Maximum width in pixels.
-            height: Maximum height in pixels.
-            method: Method to use for fit-in ('full', 'adaptive' or None).
+            width: Target width in pixels.
+            height: Target height in pixels.
+            method: Resizing method (fit-in, stretch, smart).
+            upscale: Whether to upscale the image.
         """
-        assert "stretch" not in (
-            a.name for a in self._get_operations()
-        ), "Use either 'fit-in' or 'stretch'"
-        if method:
-            self.add_operation(f"{method}-fit-in")
+        method_default = "fit-in"
+        focal_point = self.get_filter("focal")
+        if focal_point:
+            method_default = "focal"
+        method = method or method_default
+        if method == "focal":
+            method = "smart"
+        if method == "stretch":
+            self.add_filter("stretch")
         else:
-            self.add_operation("fit-in")
+            self.add_operation(method)
         self.add_operation("resize", f"{width}x{height}")
+        if upscale:
+            self.remove("no_upscale")
+            self.add_filter("upscale")
+        else:
+            self.remove("upscale")
 
     # ===== Filters =====
     @chain
@@ -126,6 +136,56 @@ class Thumbor(BaseImagorThumbor):
         self.add_filter(
             "fill", color.removeprefix("#").lower(), str(fill_transparent).lower()
         )
+
+    @chain
+    def focal(
+        self,
+        left: int | float | None = None,
+        top: int | float | None = None,
+        right: int | float | None = None,
+        bottom: int | float | None = None,
+    ) -> Self:
+        """Set the focal point of the image, which is used in later transforms (e.g. `crop`).
+
+        The coordinates are either in pixel of float values between 0 and 1 (percentage of image dimensions)
+
+        Coordinated by a region of left-top point AxB and right-bottom point CxD, or a point X,Y.
+
+        Args:
+            left: Left or x coordinate of the focal region/point, either in pixel or relative (float from 0 to 1).
+            top: Top or y coordinate of the focal region/point, either in pixel or relative (float from 0 to 1).
+            right: Right coordinate of the focal region, either in pixel or relative (float from 0 to 1).
+            bottom: Bottom coordinate of the focal region, either in pixel or relative (float from 0 to 1).
+        """
+        if right is None and bottom is None:
+            # point is not supported, create a very small area
+            right = left + 0.01 if isinstance(left, float) else left + 1
+            bottom = top + 0.01 if isinstance(top, float) else top + 1
+        if (
+            left is not None
+            and top is not None
+            and right is not None
+            and bottom is not None
+        ):
+            # percent is not supported by thumbor, but we can calculate it
+            if (
+                isinstance(left, float)
+                or isinstance(top, float)
+                or isinstance(right, float)
+                or isinstance(bottom, float)
+            ):
+                w, h = self.get_size(original=True)
+            left = f"{int(left * w)}" if isinstance(left, float) else str(left)
+            top = f"{int(top * h)}" if isinstance(top, float) else str(top)
+            right = f"{int(right * w)}" if isinstance(right, float) else str(right)
+            bottom = f"{int(bottom * h)}" if isinstance(bottom, float) else str(bottom)
+            self.add_filter("focal", f"{left}x{top}:{right}x{bottom}")
+        else:
+            raise ValueError(
+                "'left', 'top' or 'left', 'top', 'right', 'bottom' must be specified"
+            )
+        self.add_operation("smart")
+        self.remove("fit-in")
 
     @chain
     def format(
@@ -238,12 +298,17 @@ class Thumbor(BaseImagorThumbor):
         self.add_filter("strip_icc")
 
     @chain
-    def upscale(self) -> Self:
+    def upscale(self, upscale: bool = True) -> Self:
         """Enable upscaling of the image beyond its original dimensions.
         This only makes sense with `fit-in` or `adaptive-fit-in`.
 
         [More information](https://thumbor.readthedocs.io/en/latest/upscale.html)"""
-        self.add_filter("upscale")
+        if upscale:
+            self.remove("no_upscale")
+            self.add_filter("upscale")
+        else:
+            self.remove("no_upscale")
+            self.add_filter("no_upscale")
 
 
 if __name__ == "__main__":
@@ -260,10 +325,10 @@ if __name__ == "__main__":
 
     # Create an Imagor processor and apply some transformations
     img = Thumbor(base_url="http://localhost:8019", signer=signer).with_image(image_url)
-    img = img.quality(80).fit_in(400, 300)
-    img = img.radius(50, color="fff")
+    img = img.quality(80).focal(0.1, 0.8).resize(200, 600)
+    # img = img.radius(50, color=None)
     # img = img.blur(10)
-    img = img.rotate(90)
+    # img = img.rotate(90).format("png")
 
     url = img.url()
     print(url)

@@ -163,7 +163,6 @@ class BaseImage(ABC):
 
     @property
     def signer(self) -> Signer | None:
-        """Returns the signer object"""
         return self._signer
 
     def add_operation(
@@ -231,6 +230,14 @@ class BaseImage(ABC):
     def remove_operations(self) -> None:
         """Remove all operations from the image processing pipeline."""
         self._operations = []
+
+    def get_filter(self, name: str) -> Filter | None:
+        """Get a filter by name."""
+        return next((f for f in self._filters if f.name == name), None)
+
+    def get_operation(self, name: str) -> Operation | None:
+        """Get an operation by name."""
+        return next((op for op in self._operations if op.name == name), None)
 
     @chain
     def with_image(self, image: str) -> Self:
@@ -545,7 +552,7 @@ class BaseImage(ABC):
         halign: HALIGN | None = None,
         valign: VALIGN | None = None,
     ) -> Self:
-        """Crop the image. Coordinates are in pixel or float values between 0 and 1 (percentage of image dimensions)
+        """Manually crop the image. Coordinates are in pixel or float values between 0 and 1 (percentage of image dimensions)
         The coordiantes start in the top/left corner and go down and right.
 
         Args:
@@ -598,34 +605,37 @@ class BaseImage(ABC):
         #    self.add_operation("valign", valign)
 
     @chain
-    def fit_in(self, width: int, height: int) -> Self:
-        """Fit the image within the specified dimensions while preserving aspect ratio.
-
-        Args:
-            width: Maximum width in pixels.
-            height: Maximum height in pixels.
-        """
-        assert "stretch" not in (
-            a.name for a in self._get_operations()
-        ), "Use either 'fit-in' or 'stretch'"
-        self.add_operation("fit-in")
-        self.add_operation("resize", f"{width}x{height}")
-
-    @chain
     def resize(
-        self, width: int, height: int, method: Literal["fit-in", "stretch"] = "fit-in"
+        self,
+        width: int,
+        height: int,
+        method: Literal["fit-in", "stretch", "smart", "focal"] | None = None,
+        upscale: bool = True,
     ) -> Self:
         """Resize the image to the exact dimensions.
 
         Args:
             width: Target width in pixels.
             height: Target height in pixels.
+            method: Resizing method (fit-in, stretch, smart, focal),
+                    automatically set to 'focal' if used before, otherwise 'fit-in'.
+            upscale: Whether to upscale the image.
         """
-        assert method not in (
-            a.name for a in self._get_operations()
-        ), "Use either 'fit-in' or 'stretch'"
+        method_default = "fit-in"
+        focal_point = self.get_filter("focal")
+        if focal_point:
+            method_default = "focal"
+        method = method or method_default
+        if method == "focal":
+            method = "smart"
         self.add_operation(method)
         self.add_operation("resize", f"{width}x{height}")
+        if upscale:
+            self.remove("no_upscale")
+            self.add_filter("upscale")
+        else:
+            self.remove("upscale")
+            self.add_filter("no_upscale")
 
     @chain
     def meta(
@@ -833,11 +843,6 @@ class BaseImagorThumbor(BaseImage):
         """
         self.add_operation("fit-in", f"{width}x{height}")
 
-    @chain
-    def smart_crop(self) -> Self:
-        """Enable smart cropping to detect the region of interest."""
-        self.add_operation("smart")
-
     # ===== Common Filters =====
     @chain
     def grayscale(self) -> Self:
@@ -873,14 +878,17 @@ class BaseImagorThumbor(BaseImage):
         self.add_filter("strip_icc")
 
     @chain
-    def upscale(self) -> Self:
-        """Allow upscaling the image beyond its original dimensions."""
-        self.remove("no_upscale")
+    def upscale(self, upscale: bool = True) -> Self:
+        """Allow upscaling the image beyond its original dimensions.
 
-    @chain
-    def no_upscale(self) -> Self:
-        """Prevent upscaling the image beyond its original dimensions."""
-        self.add_filter("no_upscale")
+        This only makes sense with `fit-in`.
+        """
+        if upscale:
+            self.remove("no_upscale")
+            self.add_filter("upscale")
+        else:
+            self.remove("upscale")
+            self.add_filter("no_upscale")
 
     @chain
     def max_bytes(self, amount: int) -> Self:
@@ -972,5 +980,5 @@ if __name__ == "__main__":
     img.blur(5)
 
     # Get and print the processed URL
-    print(img.path())
+    # print(img.path())
     print(img.url())

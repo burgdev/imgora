@@ -16,35 +16,6 @@ class Imagor(BaseImagorThumbor):
     """[Imagor](https://github.com/cshum/imagor) image processor with Imagor-specific operations and filters."""
 
     # ===== Operations =====
-    @chain
-    def fit_in(self, width: int, height: int, upscale: bool = False) -> Self:
-        """Fit the image within the specified dimensions while preserving aspect ratio.
-
-        Args:
-            width: Maximum width in pixels.
-            height: Maximum height in pixels.
-        """
-        assert "stretch" not in (
-            a.name for a in self._get_operations()
-        ), "Use either 'fit-in' or 'stretch'"
-        self.add_operation("fit-in")
-        self.add_operation("resize", f"{width}x{height}")
-        if upscale:
-            self.add_filter("upscale")
-
-    @chain
-    def stretch(self, width: int, height: int) -> Self:
-        """Stretch the image to the exact dimensions without preserving aspect ratio.
-
-        Args:
-            width: Target width in pixels.
-            height: Target height in pixels.
-        """
-        assert "fit-in" not in (
-            a.name for a in self._get_operations()
-        ), "Use either 'fit-in' or 'stretch'"
-        self.add_operation("stretch")
-        self.add_operation("resize", f"{width}x{height}")
 
     # ===== Filters =====
     @chain
@@ -54,8 +25,6 @@ class Imagor(BaseImagorThumbor):
         top: int | float | None = None,
         right: int | float | None = None,
         bottom: int | float | None = None,
-        x: int | float | None = None,
-        y: int | float | None = None,
     ) -> Self:
         """Set the focal point of the image, which is used in later transforms (e.g. `crop`).
 
@@ -64,32 +33,32 @@ class Imagor(BaseImagorThumbor):
         Coordinated by a region of left-top point AxB and right-bottom point CxD, or a point X,Y.
 
         Args:
-            left: Left coordinate of the focal region.
-            top: Top coordinate of the focal region.
-            right: Right coordinate of the focal region.
-            bottom: Bottom coordinate of the focal region.
-            x: X coordinate of the focal point.
-            y: Y coordinate of the focal point.
+            left: Left or x coordinate of the focal region/point, either in pixel or relative (float from 0 to 1).
+            top: Top or y coordinate of the focal region/point, either in pixel or relative (float from 0 to 1).
+            right: Right coordinate of the focal region, either in pixel or relative (float from 0 to 1).
+            bottom: Bottom coordinate of the focal region, either in pixel or relative (float from 0 to 1).
         """
-        if left is not None:
-            assert top is not None, "top must be specified if left is specified"
-            assert right is not None, "right must be specified if left is specified"
-            assert bottom is not None, "bottom must be specified if left is specified"
-            assert x is None, "x must not be specified if left is specified"
-            assert y is None, "y must not be specified if left is specified"
-            left = f"{left:.4f}" if isinstance(left, float) else str(left)
-            top = f"{top:.4f}" if isinstance(top, float) else str(top)
-            right = f"{right:.4f}" if isinstance(right, float) else str(right)
-            bottom = f"{bottom:.4f}" if isinstance(bottom, float) else str(bottom)
-            self.add_filter("focal", f"{left}x{top}:{right}x{bottom}")
-        if x is not None:
-            x = f"{x:.4f}" if isinstance(x, float) else str(x)
-            y = f"{y:.4f}" if isinstance(y, float) else str(y)
-            assert y is not None, "y must be specified if x is specified"
-            assert (
-                top is None and left is None and right is None and bottom is None
-            ), "top, left, right, bottom must not be specified if x is specified"
+        if right is None and bottom is None:
+            x = f"{left:.3f}" if isinstance(left, float) else str(left)
+            y = f"{top:.3f}" if isinstance(top, float) else str(top)
             self.add_filter("focal", f"{x}x{y}")
+        elif (
+            left is not None
+            and top is not None
+            and right is not None
+            and bottom is not None
+        ):
+            left = f"{left:.3f}" if isinstance(left, float) else str(left)
+            top = f"{top:.3f}" if isinstance(top, float) else str(top)
+            right = f"{right:.3f}" if isinstance(right, float) else str(right)
+            bottom = f"{bottom:.3f}" if isinstance(bottom, float) else str(bottom)
+            self.add_filter("focal", f"{left}x{top}:{right}x{bottom}")
+        else:
+            raise ValueError(
+                "'left', 'top' or 'left', 'top', 'right', 'bottom' must be specified"
+            )
+        self.add_operation("smart")
+        self.remove("fit-in")
 
     @chain
     def page(self, num: int) -> Self:
@@ -145,7 +114,7 @@ class Imagor(BaseImagorThumbor):
 
     @chain
     def round_corner(
-        self, rx: int, ry: Optional[int] = None, color: str = "000000"
+        self, rx: int, ry: Optional[int] = None, color: str | None = None
     ) -> Self:
         """Add rounded corners to the image.
 
@@ -156,8 +125,13 @@ class Imagor(BaseImagorThumbor):
         """
         if ry is None:
             ry = rx
-        color = color.lstrip("#").lower()
-        self.add_filter("round_corner", f"{rx},{ry},{color}")
+        color_fmt = (
+            f",{color.lstrip("#").lower()}"
+            if color not in [None, "none"]
+            else ",ffffff"
+        )
+
+        self.add_filter("round_corner", f"{rx},{ry}{color_fmt}")
 
     @chain
     def watermark(
@@ -245,11 +219,8 @@ if __name__ == "__main__":
 
     # Create an Imagor processor and apply some transformations
     img = Imagor(base_url="http://localhost:8018", signer=signer).with_image(image_url)
-    img = img.quality(80).fit_in(400, 300)
-    img = img.radius(50, color="fff")
-    # img = img.blur(10)
-    img = img.rotate(90)
+    img = img.quality(80).focal(0.1, 0.5, 0.4, 1).resize(200, 400)
 
-    url = img.meta().url()
+    url = img.url()
     print(url)
     webbrowser.open(url)

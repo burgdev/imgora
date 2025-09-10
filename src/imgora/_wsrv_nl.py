@@ -30,6 +30,7 @@ class WsrvNl(BaseImage):
         """
         base_url = base_url or "https://wsrv.nl"
         super().__init__(base_url, image)
+        self._crop_method = "fit-in"
 
     def path(
         self,
@@ -56,36 +57,47 @@ class WsrvNl(BaseImage):
     # ===== Filters =====
     @chain
     def resize(
-        self, width: int, height: int, method: Literal["fit-in", "stretch"] = "fit-in"
+        self,
+        width: int,
+        height: int,
+        method: Literal["fit-in", "stretch", "smart", "focal"] | None = None,
+        upscale: bool = True,
     ) -> Self:
         """Resize the image to the exact dimensions.
 
         Args:
             width: Target width in pixels.
             height: Target height in pixels.
+            method: Resizing method (fit-in, stretch, smart).
+            upscale: Whether to upscale the image.
         """
+        method_default = "fit-in"
+        focal_point = self.get_filter("a")
+        if focal_point:
+            if focal_point.args[0] == "focal":
+                method_default = "focal"
+            elif focal_point.args[0] in ["entropy", "attention"]:
+                method_default = "smart"
+        method = method or method_default
+        if method == "smart":
+            self.add_filter("a", "entropy")
+            method = "cover"
+        if method == "focal":
+            self.add_filter("a", "focal")
+            method = "cover"
+        elif method == "fit-in":
+            method = "inside"
+        elif method == "stretch":
+            method = "fill"
+        self.add_filter("fit", method)
         self.add_filter("w", width)
         self.add_filter("h", height)
+        if not upscale:
+            self.add_filter("we")
 
     @chain
     def crop(
         self,
-        # width: int,
-        # height: int,
-        # align: Literal[
-        #    "center",
-        #    "left",
-        #    "right",
-        #    "top",
-        #    "bottom",
-        #    "top-left",
-        #    "top-right",
-        #    "bottom-left",
-        #    "bottom-right",
-        #    "entropy",
-        #    "attention",
-        # ] = "center",
-        # fit: Literal["cover", "contain"] = "cover",
         left: int | float | None = None,
         top: int | float | None = None,
         right: int | float | None = None,
@@ -96,7 +108,7 @@ class WsrvNl(BaseImage):
         valign: VALIGN | None = None,
         prcrop: bool = True,
     ) -> Self:
-        """Crop the image. Coordinates are in pixel or float values between 0 and 1 (percentage of image dimensions)
+        """Manually crop the image. Coordinates are in pixel or float values between 0 and 1 (percentage of image dimensions)
         The coordiantes start in the top/left corner and go down and right.
 
         Coordinate system:
@@ -147,39 +159,22 @@ class WsrvNl(BaseImage):
         # self.add_filter("fit", "cover")
 
     @chain
-    def fit_in(
-        self,
-        width: int,
-        height: int,
-        fit: Literal["cover", "contain", "fill", "inside", "outside"] = "cover",
-        upscale: bool = True,
-    ) -> Self:
-        """Fit the image within the specified dimensions while preserving aspect ratio.
-
-        Args:
-            width: Maximum width in pixels.
-            height: Maximum height in pixels.
-        """
-        self.add_filter("w", width)
-        self.add_filter("h", height)
-        self.add_filter("fit", fit)
-        if not upscale:
-            self.add_filter("we")
-
-    @chain
     def grayscale(self) -> Self:
         """Convert the image to grayscale."""
         self.add_filter("filt", "greyscale")
 
     @chain
-    def upscale(self) -> Self:
-        """upscale the image if fit-in is used"""
-        self.remove("we")
+    def upscale(self, upscale: bool = True) -> Self:
+        """upscale the image if fit-in is used
 
-    @chain
-    def no_upscale(self) -> Self:
-        """do not upscale the image if fit-in is used"""
-        self.add_filter("we")
+        This only makes sense with `fit-in` or `inside`.
+
+        Args:
+            upscale: Whether to upscale the image. Defaults to True."""
+        if upscale:
+            self.remove("we")
+        else:
+            self.add_filter("we")
 
     @chain
     def rotate(self, angle: int | None = None) -> Self:
@@ -257,6 +252,44 @@ class WsrvNl(BaseImage):
                 self.add_filter("sharpj", jagged)
 
     @chain
+    def focal(
+        self,
+        left: int | float | None = None,
+        top: int | float | None = None,
+        right: int | float | None = None,
+        bottom: int | float | None = None,
+    ) -> Self:
+        """Set the focal point of the image, which is used in later transforms (e.g. `crop`).
+        Only a point is supported by wsrv.nl. For this you can use left and top, if right and bottom is used as well
+        it calculates the center of the region.
+
+        Args:
+            left: Left or x coordinate of the focal region/point, either in pixel or relative (float from 0 to 1).
+            top: Top or y coordinate of the focal region/point, either in pixel or relative (float from 0 to 1).
+            right: Right coordinate of the focal region, either in pixel or relative (float from 0 to 1).
+            bottom: Bottom coordinate of the focal region, either in pixel or relative (float from 0 to 1).
+
+        !!! warning
+            [wsrv.nl](https://wsrv.nl/docs/crop.html#focal-point) only supports a point as focal region,
+            if right and bottom is specified it calculates the center of the region.
+        """
+        if right is not None and left is not None:
+            left = left + (right - left) / 2
+            if isinstance(right, int):
+                left = int(left)
+        if bottom is not None and top is not None:
+            top = top + (bottom - top) / 2
+            if isinstance(bottom, int):
+                top = int(top)
+        if left is not None:
+            left = f"{left:.3f}" if isinstance(left, float) else str(left)
+            self.add_filter("fpx", left)
+        if top is not None:
+            top = f"{top:.3f}" if isinstance(top, float) else str(top)
+            self.add_filter("fpy", top)
+        self.add_filter("a", "focal")
+
+    @chain
     def format(
         self,
         fmt: Literal["jpeg", "jpg", "png", "webp", "tiff"],
@@ -317,7 +350,9 @@ if __name__ == "__main__":
 
     # Create an Imagor processor and apply some transformations
     img = WsrvNl(base_url="https://wsrv.nl").with_image(image_url)
-    img = img.fit_in(300, 400, "inside", upscale=False).sharpen(10)
+    img = (
+        img.focal(0.1, 0.6).resize(3000, 4000, upscale=True, method="smart").sharpen(10)
+    )
     # img = img.quality(80).fit_in(400, 300)
     # img = img.radius(50, color="fff")
     # img = img.blur(10)

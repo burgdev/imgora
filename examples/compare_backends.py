@@ -281,7 +281,7 @@ class ImageComparator:
 
         result_list = []
         for source_url in self.source_urls:
-            log.info(f"Processing '{source_url}'")
+            log.info(f"Processing source '{source_url}'")
             # Prepare results structure
             results = {}
             for idx, transform in enumerate(self.transformations):
@@ -312,6 +312,7 @@ class ImageComparator:
 
             # Process each backend
             for backend_info in self.backends:
+                log.info(f"  Processing backend '{backend_info['name']}'")
                 backend_name = backend_info["name"]
                 backend_class = backend_info["class"]
                 backend_kwargs = backend_info["kwargs"]
@@ -342,19 +343,6 @@ class ImageComparator:
 
             # Get source image dimensions if available
             source_size = None
-            # try:
-            #    # Try to get image dimensions using Pillow
-            #    from io import BytesIO
-
-            #    import requests
-            #    from PIL import Image
-
-            #    response = requests.get(source_url)
-            #    img = Image.open(BytesIO(response.content))
-            #    source_size = img.size  # Returns (width, height)
-            # except Exception:
-            #    # If we can't get dimensions, just use None
-            #    pass
             result_list.append(
                 {
                     "source_url": source_url,
@@ -406,8 +394,6 @@ def create_sample_comparison():
     ]
 
     log.info("Setting up directories...")
-    tmp_dir = Path("comparison_results")
-    tmp_dir.mkdir(parents=True, exist_ok=True)
     temp_dir = Path(tempfile.mkdtemp(prefix="img_comparison_"))
     output_file = temp_dir / "comparison.html"
     log.debug(f"Using temporary directory: {temp_dir}")
@@ -507,19 +493,28 @@ def create_sample_comparison():
             resize_step,
             Operation("blur", radius=10),
             Operation("quality", 85),
-            Operation("round_corner", 40),
+            Operation("round_corner", 100),
         ],
         description="Resize, convert to grayscale, and set quality",
     )
 
+    for method in ["fit-in", "stretch", "smart"]:
+        comparator.add_transformation(
+            operations=[
+                Operation("resize", 250, 800, method),
+                # Operation("trim"),
+            ],
+            name=f"Resize with {method}",
+            description=f"Resize image using {method} method",
+        )
     comparator.add_transformation(
         operations=[
-            resize_step,
-            Operation("crop", 50, 200, -20, -100),
-            # Operation("trim"),
+            Operation("focal", 0.1, 0.2, 0.3, 0.4),
+            Operation("resize", 200, 800),
         ],
+        name="Resize with focal area",
+        description="Resize image using focal area",
     )
-
     comparator.add_transformation(
         operations=[
             resize_step,
