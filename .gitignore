@@ -2,6 +2,7 @@ pgbackups
 slim.report.*
 .infisical.json
 backups
+uv.lock
 #
 #
 # Byte-compiled / optimized / DLL files
