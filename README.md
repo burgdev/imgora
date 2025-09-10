@@ -66,15 +66,18 @@ https://wsrv.nl/?url=https%3A%2F%2Fwsrv.nl%2Fpuppy.jpg&cx=166&cy=221&cw=831&ch=7
 <figure>
 <a href="https://wsrv.nl/?url=https%3A%2F%2Fwsrv.nl%2Fpuppy.jpg&cx=166&cy=221&cw=831&ch=787&precrop&w=200&h=150&blur=2.50&filt=greyscale&quality=50" target="_blank">
     <img src="https://wsrv.nl/?url=https%3A%2F%2Fwsrv.nl%2Fpuppy.jpg&cx=166&cy=221&cw=831&ch=787&precrop&w=200&h=150&blur=2.50&filt=greyscale&quality=50" />
-</a>
+</a><br />
     <figcaption>Processed image</figcaption>
 </figure>
+<br />
 <figure>
 <a href="https://wsrv.nl/puppy.jpg" target="_blank">
     <img src="https://wsrv.nl/puppy.jpg" width="400" />
-</a>
+</a><br />
     <figcaption><a href="https://wsrv.nl/puppy.jpg" target="_blank">Original image</a> (width reduced to 400px)</figcaption>
 </figure>
+<br /><br />
+
 **NOTE:**
 
 In order to test the url with Imagor or Thumbor you need to start a server.
