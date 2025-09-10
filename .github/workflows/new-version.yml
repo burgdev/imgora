@@ -23,7 +23,7 @@ jobs:
       - name: Extract latest version
         id: latest-version
         run: |
-          VERSION=$(uv run inv version); echo "Current version: $VERSION"
+          VERSION=$(uv run --frozen inv version); echo "Current version: $VERSION"
           echo "version=$VERSION" >> $GITHUB_ENV
 
       - name: Check if tag exists

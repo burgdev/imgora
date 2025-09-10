@@ -18,10 +18,25 @@ jobs:
         uses: ./.github/actions/setup-venv
 
       - name: Run checks
-        run: uv run inv check
+        run: uv run --frozen inv check
 
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+      - name: Set up the environment with multiple python versions
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.8.16"
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
+          python-version: ${{ matrix.python-version }}
       - name: Run test
-        run: uv run inv tests.run
+        run: uv run --frozen inv tests.run
 
   check-docs:
     runs-on: ubuntu-latest
@@ -33,4 +48,4 @@ jobs:
         uses: ./.github/actions/setup-venv
 
       - name: Check if documentation can be built
-        run: uv run mkdocs build -s
+        run: uv run --frozen mkdocs build -s

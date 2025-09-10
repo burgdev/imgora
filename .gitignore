@@ -3,6 +3,7 @@ slim.report.*
 .infisical.json
 backups
 uv.lock
+.vscode
 #
 #
 # Byte-compiled / optimized / DLL files
